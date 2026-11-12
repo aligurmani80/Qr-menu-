@@ -529,6 +529,10 @@
   }
 
   function getMenuItems() {
+    if (window.Tenant && typeof Tenant.ensureSampleMenuItems === "function") {
+      Tenant.ensureSampleMenuItems(tenantRestaurantId);
+    }
+
     const stored = readJson(KEYS.menu);
     if (Array.isArray(stored)) {
       return stored
