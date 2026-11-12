@@ -2787,6 +2787,9 @@
   }
 
   applyTheme();
+  if (window.Tenant && typeof Tenant.ensureSampleMenuItems === "function") {
+    Tenant.ensureSampleMenuItems(restaurantId);
+  }
   loadSettings();
   loadMenu();
   loadOffers();
