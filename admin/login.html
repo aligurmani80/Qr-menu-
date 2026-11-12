@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F2E1F">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Sign in to the local restaurant admin for menu, orders, tables and offers.">
+  <title>Sign in | Karahi House Admin</title>
+
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+
+  <script src="../js/config.js" defer></script>
+  <script src="../js/tenant.js" defer></script>
+  <script src="../js/demo-data.js" defer></script>
+  <script src="js/admin.js" defer></script>
+</head>
+<body class="login-page" data-page="login">
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-label="Restaurant admin">
+      <a class="login-brand" href="../index.html">
+        <span class="brand-mark brand-mark--lg" data-login-logo data-image-fallback data-initial="K">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3.5" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
+            <rect x="14.1" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
+            <rect x="3.5" y="14.1" width="6.4" height="6.4" rx="1.4"></rect>
+            <path d="M6.6 6.6h.8M17.1 6.6h.8M6.6 17.1h.8"></path>
+            <path d="M14.1 14.1h2.7v2.7h-2.7zM19.8 14.1h.7M14.1 19.8h2.7M19.6 19.6h.9"></path>
+          </svg>
+          <span class="brand-dot" aria-hidden="true"></span>
+        </span>
+        <span class="login-brand-copy">
+          <strong data-login-name>Karahi House</strong>
+          <span>Restaurant Admin</span>
+        </span>
+      </a>
+
+      <div class="login-pitch">
+        <span class="login-kicker">Table service, simplified</span>
+        <h1>Run the floor<br>from one <em>quiet</em> screen.</h1>
+        <p>Menu, table QR codes, live orders, offers and the guest-facing settings — all in one place for this restaurant.</p>
+        <div class="login-points">
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Live table orders
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Menu and QR control
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Cash at table only
+          </span>
+        </div>
+      </div>
+
+      <p class="login-brand-foot">Local-only admin · Data stays in this browser</p>
+    </section>
+
+    <section class="login-panel">
+      <div class="login-card">
+        <div class="login-card-brand">
+          <span class="brand-mark" data-login-logo data-image-fallback data-initial="K">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <rect x="3.5" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
+              <rect x="14.1" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
+              <rect x="3.5" y="14.1" width="6.4" height="6.4" rx="1.4"></rect>
+              <path d="M14.1 14.1h2.7v2.7h-2.7zM19.8 14.1h.7M14.1 19.8h2.7M19.6 19.6h.9"></path>
+            </svg>
+            <span class="brand-dot" aria-hidden="true"></span>
+          </span>
+          <strong data-login-name>Karahi House</strong>
+        </div>
+
+        <p class="login-eyebrow">Restaurant admin</p>
+        <h1 class="login-title">Welcome back</h1>
+        <p class="login-sub">Sign in to manage the menu, orders, tables and offers.</p>
+
+        <div class="login-error" data-login-error role="alert" hidden></div>
+
+        <form class="login-form" id="login-form" novalidate>
+          <div class="field">
+            <label for="login-username">Username</label>
+            <input id="login-username" name="username" type="text" autocomplete="username" spellcheck="false" required>
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <div class="password-field">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+              <button class="icon-button password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary login-submit" type="submit">Sign in</button>
+        </form>
+
+        <div class="login-links">
+          <a href="../index.html">← Back to customer menu</a>
+          <span>One restaurant only</span>
+        </div>
+
+        <p class="login-foot">Credentials are placeholders in <code>js/config.js</code>. Replace them with the owner's real login before going live.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="admin-toast" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <div class="boot-error"><h1>JavaScript is required</h1><p>Turn on JavaScript to use the restaurant admin.</p></div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F2E1F">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Sign in to the Super Admin console for restaurants, plans and monthly payments.">
+  <title>Sign in | Super Admin Console</title>
+
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../admin/css/admin.css">
+  <link rel="stylesheet" href="css/superadmin.css">
+
+  <script src="../js/config.js" defer></script>
+  <script src="../js/tenant.js" defer></script>
+  <script src="../js/demo-data.js" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/superadmin.js" defer></script>
+</head>
+<body class="login-page login-page--sa" data-page="login">
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-label="Super Admin console">
+      <a class="login-brand" href="../index.html">
+        <span class="brand-mark brand-mark--lg" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24" focusable="false">
+            <path d="M4 10v9h16v-9"></path>
+            <path d="M3 10l1.8-6h14.4L21 10a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"></path>
+            <path d="M9.5 19v-4.6h5V19"></path>
+          </svg>
+          <span class="brand-dot" aria-hidden="true"></span>
+        </span>
+        <span class="login-brand-copy">
+          <strong data-platform-name>Karahi House</strong>
+          <span>Super Admin</span>
+        </span>
+      </a>
+
+      <div class="login-pitch">
+        <span class="login-kicker">Restaurant control desk</span>
+        <h1>Every outlet,<br>one clear <em>ledger</em>.</h1>
+        <p>Create restaurants, set their plans and keep monthly fees in order. One console for the whole platform.</p>
+        <div class="login-points">
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Restaurant &amp; plan registry
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Monthly fee tracking
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Automatic expiry control
+          </span>
+        </div>
+      </div>
+
+      <p class="login-brand-foot">Local-only console · Data stays in this browser</p>
+    </section>
+
+    <section class="login-panel">
+      <div class="login-card">
+        <div class="login-card-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" focusable="false">
+              <path d="M4 10v9h16v-9"></path>
+              <path d="M3 10l1.8-6h14.4L21 10a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"></path>
+              <path d="M9.5 19v-4.6h5V19"></path>
+            </svg>
+            <span class="brand-dot" aria-hidden="true"></span>
+          </span>
+          <strong data-platform-name>Karahi House</strong>
+        </div>
+
+        <span class="sa-login-badge">Super Admin</span>
+        <h1 class="login-title">Console sign-in</h1>
+        <p class="login-sub">Manage restaurants, plans and monthly payments.</p>
+
+        <div class="login-error" data-login-error role="alert" hidden></div>
+
+        <form class="login-form" id="superadmin-login-form" novalidate>
+          <div class="field">
+            <label for="sa-username">Username</label>
+            <input id="sa-username" name="username" type="text" autocomplete="username" spellcheck="false" required>
+          </div>
+          <div class="field">
+            <label for="sa-password">Password</label>
+            <div class="password-field">
+              <input id="sa-password" name="password" type="password" autocomplete="current-password" required>
+              <button class="icon-button password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary login-submit" type="submit">Sign in</button>
+        </form>
+
+        <div class="login-links">
+          <a href="../admin/login.html">Restaurant admin sign-in</a>
+          <a href="../index.html">Customer menu</a>
+        </div>
+
+        <p class="login-foot">Credentials are placeholders in <code>superadmin/js/config.js</code>. Replace them before going live.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="admin-toast" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <div class="boot-error"><h1>JavaScript is required</h1><p>Turn on JavaScript to use the Super Admin console.</p></div>
+  </noscript>
+</body>
+</html>

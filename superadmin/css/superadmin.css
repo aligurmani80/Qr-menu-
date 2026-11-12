@@ -1,0 +1,1326 @@
+/* ==========================================================================
+   KARAHI HOUSE — PHASE 4 SUPER ADMIN
+   Layered on top of admin/css/admin.css so the console keeps the same deep
+   green + burnt orange language as the restaurant admin.
+   ========================================================================== */
+
+.sa-brand-mark {
+  background: var(--primary);
+  color: var(--cream);
+}
+
+.sidebar .sa-brand-mark {
+  background: rgba(253, 241, 228, 0.12);
+}
+
+.sa-topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.sa-session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sa-session-chip .icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+}
+
+.sa-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px 12px;
+  border-radius: 12px;
+  background: rgba(253, 241, 228, 0.06);
+}
+
+.sa-sidebar-user .avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+.sa-sidebar-copy {
+  min-width: 0;
+}
+
+.sa-sidebar-copy strong {
+  display: block;
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sa-sidebar-copy span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(234, 240, 233, 0.55);
+  font-size: 10px;
+}
+
+.sa-sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+  border: 1px solid rgba(253, 241, 228, 0.14);
+  border-radius: 10px;
+  color: rgba(253, 241, 228, 0.82);
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.sa-sidebar-logout:hover {
+  background: rgba(253, 241, 228, 0.1);
+  color: var(--cream);
+}
+
+.sa-sidebar-logout .icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* --------------------------------------------------------------------------
+   Dashboard
+   -------------------------------------------------------------------------- */
+
+.sa-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sa-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.panel-link:hover {
+  color: var(--accent);
+}
+
+.panel-link .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.sa-panel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.sa-panel-chip .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.sa-panel-chip--alert {
+  border-color: #F0CFC8;
+  background: #FDF0EE;
+  color: #9C3527;
+}
+
+/* --------------------------------------------------------------------------
+   Entities and statuses
+   -------------------------------------------------------------------------- */
+
+.sa-entity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sa-entity-mark {
+  background: var(--sage);
+  color: var(--primary);
+}
+
+.sa-mark-initials {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.sa-entity-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sa-entity-copy {
+  min-width: 0;
+}
+
+.sa-entity-copy strong {
+  display: block;
+  overflow: hidden;
+  max-width: 240px;
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-entity-copy span,
+.sa-id {
+  display: block;
+  overflow: hidden;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-id {
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+
+.sa-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sa-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sa-status--active {
+  background: #E7EFE7;
+  color: #1E5A3C;
+}
+
+.sa-status--expired {
+  background: #FDF0EE;
+  color: #9C3527;
+}
+
+.sa-status--disabled {
+  background: #EFEDE8;
+  color: #6C675D;
+}
+
+.sa-pay {
+  display: inline-flex;
+  align-items: center;
+  height: 23px;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sa-pay--paid {
+  background: #E7EFE7;
+  color: #1E5A3C;
+}
+
+.sa-pay--unpaid {
+  background: var(--peach);
+  color: #A65A16;
+}
+
+.sa-pay--overdue {
+  background: #FDF0EE;
+  color: #9C3527;
+}
+
+.sa-plan-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cell-sub.is-overdue {
+  color: #9C3527;
+  font-weight: 700;
+}
+
+.sa-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sa-row-actions .btn {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.sa-table td {
+  vertical-align: middle;
+}
+
+.sa-table .cell-actions {
+  white-space: nowrap;
+}
+
+.sa-table--recent {
+  min-width: 0;
+}
+
+.sa-table--recent th,
+.sa-table--recent td {
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.sa-table--recent th:first-child,
+.sa-table--recent td:first-child {
+  padding-left: 2px;
+}
+
+.sa-table--recent th:last-child,
+.sa-table--recent td:last-child {
+  padding-right: 2px;
+}
+
+.sa-table--restaurants {
+  min-width: 940px;
+}
+
+.sa-table--billing {
+  min-width: 840px;
+}
+
+/* --------------------------------------------------------------------------
+   Restaurant form
+   -------------------------------------------------------------------------- */
+
+.sa-form-section + .sa-form-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.sa-form-heading {
+  margin-bottom: 4px;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sa-section-note {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.sa-section-note code,
+.sa-page-note code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.sa-form .form-grid {
+  margin-top: 12px;
+}
+
+.sa-form .field-hint {
+  display: block;
+  margin-top: 5px;
+}
+
+.sa-logo-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: #FCFBF8;
+}
+
+.sa-logo-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--sage);
+  color: var(--primary);
+}
+
+.sa-logo-preview .sa-mark-initials {
+  font-size: 18px;
+}
+
+.sa-logo-copy {
+  min-width: 0;
+}
+
+.sa-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sa-logo-copy .field-hint {
+  margin: 6px 0 0;
+}
+
+.sa-readonly {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* --------------------------------------------------------------------------
+   Confirmation dialogs
+   -------------------------------------------------------------------------- */
+
+.sa-modal-text {
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sa-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.sa-callout .icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex: none;
+}
+
+.sa-callout p {
+  margin: 0;
+}
+
+.sa-callout--danger {
+  border: 1px solid #F0CFC8;
+  background: #FDF0EE;
+  color: #7B2A1F;
+}
+
+.sa-callout--danger .icon {
+  color: #B23B2B;
+}
+
+.sa-fact-list {
+  margin: 14px 0 0;
+  padding: 0 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   Plans
+   -------------------------------------------------------------------------- */
+
+.sa-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sa-plan-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #FFFFFF;
+  box-shadow: var(--shadow-card);
+}
+
+.sa-plan-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.sa-plan-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--peach);
+  color: #B55A13;
+}
+
+.sa-plan-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sa-plan-title {
+  min-width: 0;
+}
+
+.sa-plan-title h2 {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sa-plan-title span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sa-plan-price {
+  margin: 16px 0 4px;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sa-plan-price span {
+  margin-left: 4px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.sa-plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.sa-plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #4A463F;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sa-plan-features .icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  flex: none;
+  color: #1E5A3C;
+  stroke-width: 2.4;
+}
+
+.sa-plan-no-features {
+  margin: 14px 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.sa-plan-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.sa-plan-usage {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.sa-btn-danger {
+  color: #9C3527;
+}
+
+.sa-btn-danger:hover:not(:disabled) {
+  background: #FDF0EE;
+  color: #7B2A1F;
+}
+
+.sa-page-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.sa-page-note .icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+   Payments
+   -------------------------------------------------------------------------- */
+
+.sa-overdue-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-overdue-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sa-overdue-row:last-child {
+  border-bottom: 0;
+}
+
+.sa-overdue-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.sa-overdue-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex: none;
+  text-align: right;
+}
+
+.sa-overdue-meta strong {
+  color: #9C3527;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sa-overdue-meta span {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.sa-quiet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sa-quiet .icon {
+  width: 16px;
+  height: 16px;
+  color: #1E5A3C;
+}
+
+.sa-pay-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #FCFBF8;
+}
+
+.sa-pay-summary > span {
+  min-width: 0;
+}
+
+.sa-pay-summary .stat-label {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.sa-pay-summary strong {
+  display: block;
+  overflow: hidden;
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-payment-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.sa-payment-accounts-label {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.sa-account-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+}
+
+.sa-account-line strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.sa-account-line code {
+  overflow-wrap: anywhere;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-align: right;
+}
+
+.sa-report-head {
+  align-items: flex-start;
+}
+
+.sa-report-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.sa-month-field input {
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #FFFFFF;
+  color: var(--ink);
+  font-size: 11.5px;
+}
+
+.sa-report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  padding: 0 18px 16px;
+}
+
+.sa-report-stat {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--cream);
+}
+
+.sa-report-stat .stat-label {
+  display: block;
+}
+
+.sa-report-stat strong {
+  display: block;
+  margin: 5px 0 2px;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sa-report-stat span:last-child {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* --------------------------------------------------------------------------
+   Login additions
+   -------------------------------------------------------------------------- */
+
+.sa-login-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 23px;
+  margin-bottom: 10px;
+  padding: 0 9px;
+  border: 1px solid #F3D8BC;
+  border-radius: 999px;
+  background: var(--peach);
+  color: #A65A16;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1180px) {
+  .sa-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sa-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .sa-table--restaurants,
+  .sa-table--billing {
+    display: block;
+    min-width: 0;
+  }
+
+  .sa-table--restaurants thead,
+  .sa-table--billing thead {
+    display: none;
+  }
+
+  .sa-table--restaurants tbody,
+  .sa-table--billing tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sa-table--restaurants tr,
+  .sa-table--billing tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 18px;
+    padding: 14px 15px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #FFFFFF;
+  }
+
+  .sa-table--restaurants tbody tr:hover,
+  .sa-table--billing tbody tr:hover {
+    background: #FFFFFF;
+  }
+
+  .sa-table--restaurants td,
+  .sa-table--billing td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sa-table--restaurants td:first-child,
+  .sa-table--billing td:first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+
+  .sa-table--restaurants td[data-label]::before,
+  .sa-table--billing td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .sa-table--restaurants .cell-actions,
+  .sa-table--billing .cell-actions {
+    grid-column: 1 / -1;
+    width: auto;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line-soft);
+    text-align: left;
+    white-space: normal;
+  }
+
+  .sa-table--restaurants .sa-row-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .sa-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sa-grid-2 > .panel {
+    min-width: 0;
+  }
+
+  .sa-session-chip {
+    display: none;
+  }
+
+  .sa-overdue-row {
+    flex-wrap: wrap;
+  }
+
+  .sa-overdue-meta {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 720px) {
+  .sa-report-head {
+    flex-direction: column;
+  }
+
+  .sa-report-tools {
+    width: 100%;
+  }
+
+  .sa-month-field {
+    flex: 1 1 140px;
+  }
+
+  .sa-month-field input {
+    width: 100%;
+  }
+
+  .sa-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sa-pay-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .sa-account-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .sa-account-line code {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar-actions .btn {
+    display: none;
+  }
+
+  .sa-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .sa-report-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .sa-logo-field {
+    align-items: flex-start;
+  }
+
+  .sa-entity-copy strong {
+    max-width: 150px;
+  }
+
+  .sa-overdue-row {
+    padding: 13px 14px;
+  }
+
+  .sa-overdue-meta {
+    flex: 1 1 100%;
+  }
+
+  .sa-row-actions {
+    width: 100%;
+  }
+
+  .sa-overdue-row .sa-row-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .sa-table--recent-restaurants th:nth-child(2),
+  .sa-table--recent-restaurants td:nth-child(2),
+  .sa-table--recent-restaurants th:nth-child(4),
+  .sa-table--recent-restaurants td:nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .sa-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Phase 5 — demo restaurant, sample labels and onboarding
+   -------------------------------------------------------------------------- */
+
+.sa-sample-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid #E7B98D;
+  background: var(--peach);
+  color: #8A4A15;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.sa-entity-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-entity-name-row {
+  display: block;
+  font-weight: 700;
+}
+
+.sa-demo-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 20px 22px;
+  border: 1px solid #E7D6BF;
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(230, 126, 34, 0.1), transparent 55%),
+    var(--cream);
+  box-shadow: var(--shadow-card);
+}
+
+.sa-demo-copy {
+  min-width: 0;
+}
+
+.sa-demo-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.sa-demo-title h2 {
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sa-demo-copy p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.sa-demo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sa-demo-link .icon {
+  width: 13px;
+  height: 13px;
+  color: var(--accent);
+}
+
+.sa-demo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.sa-onboarding-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sa-onboarding-pill .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.sa-onboarding-pill.is-complete {
+  border-color: #C7DCC9;
+  background: var(--sage);
+  color: #235C35;
+}
+
+.sa-onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sa-onboarding-progress {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sa-onboarding-progress span {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.sa-onboarding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sa-onboarding-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #FFFFFF;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.sa-onboarding-item:hover {
+  border-color: #CDD8C9;
+}
+
+.sa-onboarding-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sa-onboarding-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1.5px solid #CFC9BB;
+  border-radius: 8px;
+  background: #FFFDF8;
+  color: transparent;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.sa-onboarding-check .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.sa-onboarding-item input:checked + .sa-onboarding-check {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--cream);
+}
+
+.sa-onboarding-item input:focus-visible + .sa-onboarding-check {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sa-onboarding-item:has(input:checked) {
+  border-color: #C7DCC9;
+  background: #F7FAF6;
+}
+
+.sa-callout--warning {
+  border: 1px solid #EBD5B8;
+  background: #FFF6E9;
+  color: #7A4A13;
+}
+
+.sa-callout--warning .icon {
+  color: #C06B1B;
+}
+
+.sa-demo-row td {
+  background: rgba(253, 241, 228, 0.28);
+}
+
+.sa-demo-row td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+@media (max-width: 900px) {
+  .sa-demo-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sa-demo-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .sa-demo-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .sa-table--restaurants th:nth-child(4),
+  .sa-table--restaurants td:nth-child(4),
+  .sa-table--restaurants th:nth-child(8),
+  .sa-table--restaurants td:nth-child(8) {
+    display: none;
+  }
+}

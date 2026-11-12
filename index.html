@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F2E1F">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Browse the Karahi House menu, add dishes to your cart and place your table order. Prices in Rs.">
+  <title>Karahi House | Menu - Table 5</title>
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="js/config.js" defer></script>
+  <script src="js/tenant.js" defer></script>
+  <script src="js/demo-data.js" defer></script>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#menu-content">Skip to the menu</a>
+
+  <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6.4"></circle>
+      <path d="m15.8 15.8 4.4 4.4"></path>
+    </symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18"></path>
+    </symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14"></path>
+    </symbol>
+    <symbol id="icon-minus" viewBox="0 0 24 24">
+      <path d="M5 12h14"></path>
+    </symbol>
+    <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+      <path d="M4 12h15M13 6l6 6-6 6"></path>
+    </symbol>
+    <symbol id="icon-cart" viewBox="0 0 24 24">
+      <circle cx="9" cy="20" r="1.3"></circle>
+      <circle cx="18.2" cy="20" r="1.3"></circle>
+      <path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6"></path>
+    </symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="6.4" height="6.4" rx="1.5"></rect>
+      <rect x="13.6" y="4" width="6.4" height="6.4" rx="1.5"></rect>
+      <rect x="4" y="13.6" width="6.4" height="6.4" rx="1.5"></rect>
+      <rect x="13.6" y="13.6" width="6.4" height="6.4" rx="1.5"></rect>
+    </symbol>
+    <symbol id="icon-flame" viewBox="0 0 24 24">
+      <path d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5c0-3-3.5-4.5-3.5-9-2 2.5-3.5 4.5-3.5 9Z"></path>
+      <path d="M12 18a1.5 1.5 0 0 0 1.5-1.5c0-1.5-1.5-2-1.5-3.5-.9 1.1-1.5 2-1.5 3.5A1.5 1.5 0 0 0 12 18Z"></path>
+    </symbol>
+    <symbol id="icon-burger" viewBox="0 0 24 24">
+      <path d="M4 10a8 8 0 0 1 16 0"></path>
+      <path d="M3.5 10h17"></path>
+      <path d="M4.5 13.4h15"></path>
+      <path d="M5 16.8h14a1.6 1.6 0 0 1 0 3.2H5a1.6 1.6 0 0 1 0-3.2Z"></path>
+      <path d="M8 6.4h.01M12 5.4h.01M16 6.4h.01"></path>
+    </symbol>
+    <symbol id="icon-pot" viewBox="0 0 24 24">
+      <path d="M5 9h14l-1.3 8.4a2 2 0 0 1-2 1.6H8.3a2 2 0 0 1-2-1.6L5 9Z"></path>
+      <path d="M3.5 9h17"></path>
+      <path d="M2.5 12.5h2M19.5 12.5h2"></path>
+      <path d="M8 5.5c0-.8.5-1.5 1.2-1.8M13.5 5.5c0-.8.5-1.5 1.2-1.8"></path>
+    </symbol>
+    <symbol id="icon-cup" viewBox="0 0 24 24">
+      <path d="M7 8h10l-.9 11.2a2 2 0 0 1-2 1.8h-4.2a2 2 0 0 1-2-1.8L7 8Z"></path>
+      <path d="M5.5 8h13"></path>
+      <path d="M10 4.5c0 1 .8 1.7.8 2.7M14 3.5v1.2"></path>
+    </symbol>
+    <symbol id="icon-cash" viewBox="0 0 24 24">
+      <rect x="2.5" y="6" width="19" height="12" rx="2.5"></rect>
+      <circle cx="12" cy="12" r="2.5"></circle>
+      <path d="M6 9.5v.01M18 14.5v.01"></path>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.3 4.3L19 6.5"></path>
+    </symbol>
+    <symbol id="icon-bell" viewBox="0 0 24 24">
+      <path d="M4 17.2h16"></path>
+      <path d="M5.6 17.2a6.4 6.4 0 0 1 12.8 0"></path>
+      <path d="M12 4v3.2"></path>
+      <path d="M9.4 20.2h5.2"></path>
+      <circle cx="12" cy="3.4" r="1.2"></circle>
+    </symbol>
+    <symbol id="icon-receipt" viewBox="0 0 24 24">
+      <path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8Z"></path>
+      <path d="M9 8h6M9 11.5h6M9 15h3.5"></path>
+    </symbol>
+    <symbol id="icon-bag" viewBox="0 0 24 24">
+      <path d="M5 8h14l-1 12H6Z"></path>
+      <path d="M9 10V6.5a3 3 0 0 1 6 0V10"></path>
+    </symbol>
+    <symbol id="icon-truck" viewBox="0 0 24 24">
+      <path d="M3 6.5h10v10H3z"></path>
+      <path d="M13 9.5h4.2l3.3 3.5v3.5H13z"></path>
+      <circle cx="7" cy="18" r="1.6"></circle>
+      <circle cx="17" cy="18" r="1.6"></circle>
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5"></circle>
+      <path d="M12 7.5V12l3 2"></path>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24">
+      <path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9Z"></path>
+    </symbol>
+    <symbol id="icon-tag" viewBox="0 0 24 24">
+      <path d="m20.6 13.1-7.5 7.5a2 2 0 0 1-2.8 0L3 13.3V4h9.3l8.3 8.3a2 2 0 0 1 0 2.8Z"></path>
+      <circle cx="7.8" cy="8.8" r="1.2"></circle>
+    </symbol>
+    <symbol id="icon-pizza" viewBox="0 0 24 24">
+      <path d="M12 3.5 3.2 20a1 1 0 0 0 1.1 1.4A19 19 0 0 1 12 19.8a19 19 0 0 1 7.7 1.6 1 1 0 0 0 1.1-1.4Z"></path>
+      <path d="M8.5 6.5a9 9 0 0 1 7 0"></path>
+      <circle cx="10" cy="12" r="1"></circle>
+      <circle cx="14.5" cy="14.5" r="1"></circle>
+    </symbol>
+    <symbol id="icon-pasta" viewBox="0 0 24 24">
+      <path d="M4.5 11h15l-1.2 7.4a2 2 0 0 1-2 1.6H7.7a2 2 0 0 1-2-1.6Z"></path>
+      <path d="M3.5 11h17"></path>
+      <path d="M6.5 7.5c1.5 1.4 3 1.4 4.5 0s3-1.4 4.5 0 2 .8 2.5.3"></path>
+      <path d="M8.5 4.5c1 .9 2 .9 3 0"></path>
+    </symbol>
+  </svg>
+
+  <div class="app" id="app">
+    <header class="site-header">
+      <div class="brand-mark" id="brand-mark" hidden>
+        <img class="brand-logo" id="brand-logo" alt="">
+      </div>
+
+      <div class="brand">
+        <h1 class="brand-name" id="restaurant-name">Karahi House</h1>
+      </div>
+
+      <div class="table-badge" id="table-badge" aria-label="Current table">
+        <span class="table-dot" aria-hidden="true"></span>
+        <span id="table-number">Table 5</span>
+      </div>
+    </header>
+
+    <section class="mode-panel" aria-labelledby="mode-title">
+      <div class="mode-head">
+        <h2 class="mode-title" id="mode-title">Order mode</h2>
+        <p class="mode-note" id="mode-note">Table 5 &middot; locked from QR</p>
+      </div>
+      <div class="mode-options" id="mode-options" role="group" aria-labelledby="mode-title">
+        <button class="mode-option is-active" type="button" data-mode="dine-in" aria-pressed="true">
+          <svg class="icon" aria-hidden="true"><use href="#icon-pot"></use></svg>
+          <span>Dine-in</span>
+        </button>
+        <button class="mode-option" type="button" data-mode="takeaway" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#icon-bag"></use></svg>
+          <span>Takeaway</span>
+        </button>
+        <button class="mode-option" type="button" data-mode="delivery" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#icon-truck"></use></svg>
+          <span>Home Delivery</span>
+        </button>
+      </div>
+    </section>
+
+    <main>
+      <button class="active-order-strip" id="active-order-strip" type="button" hidden>
+        <span class="active-order-dot" aria-hidden="true"></span>
+        <span class="active-order-copy">
+          <span class="active-order-kicker">Active order</span>
+          <strong class="active-order-number" id="active-order-number">ORD-1025</strong>
+        </span>
+        <span class="active-order-status" id="active-order-status">Received</span>
+        <svg class="icon active-order-arrow" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </button>
+
+      <section class="offers-rail" id="offers-rail" aria-label="Current offers" hidden></section>
+
+      <div class="menu-tools">
+        <div class="search-field">
+          <svg class="icon search-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+          <label class="sr-only" for="dish-search">Search dishes</label>
+          <input id="dish-search" type="search" placeholder="Search dishes..." autocomplete="off" spellcheck="false" aria-controls="menu-content">
+          <button class="search-clear" id="clear-search" type="button" aria-label="Clear search" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+          </button>
+        </div>
+
+        <div class="category-rail" id="category-rail" role="group" aria-label="Filter menu by category"></div>
+      </div>
+
+      <div class="menu-content" id="menu-content"></div>
+      <p class="sr-only" id="menu-status" role="status" aria-live="polite"></p>
+
+      <section class="guest-reviews" id="guest-reviews" aria-labelledby="reviews-title" hidden>
+        <div class="reviews-head">
+          <p class="reviews-kicker">Guest feedback</p>
+          <h2 class="reviews-title" id="reviews-title">What guests are saying</h2>
+        </div>
+        <div class="reviews-list" id="reviews-list"></div>
+      </section>
+
+      <footer class="site-footer">
+        <span class="footer-pay">
+          <svg class="icon" aria-hidden="true"><use href="#icon-cash"></use></svg>
+          <span id="footer-payment-note">Pay cash at table</span>
+        </span>
+        <span class="footer-hours" id="footer-hours" hidden></span>
+        <span class="footer-prices"><span>Prices in</span> <span id="currency-symbol">Rs.</span></span>
+      </footer>
+    </main>
+  </div>
+
+  <aside class="cart-bar" id="cart-bar" aria-label="Cart summary">
+    <div class="cart-icon-wrap" aria-hidden="true">
+      <svg class="icon"><use href="#icon-cart"></use></svg>
+      <span class="cart-count-badge" id="cart-count-badge">0</span>
+    </div>
+    <div class="cart-summary">
+      <span class="cart-count" id="cart-count">0 items</span>
+      <span class="cart-total"><span class="cart-total-label">Total</span> <span id="cart-total-value">Rs. 0</span></span>
+    </div>
+    <button class="view-cart-btn" id="view-cart-button" type="button" aria-haspopup="dialog" aria-controls="cart-modal">
+      <span>View Cart</span>
+      <svg class="icon icon--directional" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+    </button>
+  </aside>
+
+  <aside class="service-rail" id="service-rail" aria-label="Table service" hidden>
+    <button class="service-btn" id="call-waiter-btn" type="button" data-service-action="waiter">
+      <span class="service-icon" aria-hidden="true"><svg class="icon"><use href="#icon-bell"></use></svg></span>
+      <span class="service-label" id="call-waiter-label">Call Waiter</span>
+    </button>
+    <button class="service-btn service-btn--bill" id="request-bill-btn" type="button" data-service-action="bill">
+      <span class="service-icon" aria-hidden="true"><svg class="icon"><use href="#icon-receipt"></use></svg></span>
+      <span class="service-label" id="request-bill-label">Request Bill</span>
+    </button>
+  </aside>
+
+  <div class="overlay" id="cart-modal" hidden>
+    <button class="overlay-backdrop" type="button" tabindex="-1" aria-hidden="true" data-close-modal="cart-modal"></button>
+    <section class="sheet cart-sheet" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <header class="sheet-header">
+        <div class="sheet-heading">
+          <div class="sheet-title-row">
+            <h2 class="sheet-title" id="cart-title">Your order</h2>
+            <span class="mini-table" id="cart-table">Table 5</span>
+          </div>
+          <p class="sheet-subtitle" id="cart-subtitle">0 items &middot; Pay cash at table</p>
+        </div>
+        <button class="icon-btn close-btn" type="button" aria-label="Close cart" data-close-modal="cart-modal">
+          <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+      </header>
+      <div class="sheet-body" id="cart-body"></div>
+      <footer class="sheet-footer" id="cart-footer" hidden></footer>
+    </section>
+  </div>
+
+  <div class="overlay" id="bill-modal" hidden>
+    <button class="overlay-backdrop" type="button" tabindex="-1" aria-hidden="true" data-close-modal="bill-modal"></button>
+    <section class="sheet bill-sheet" role="dialog" aria-modal="true" aria-labelledby="bill-title">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <header class="sheet-header">
+        <div class="sheet-heading">
+          <div class="sheet-title-row">
+            <h2 class="sheet-title" id="bill-title">Your bill</h2>
+            <span class="mini-table" id="bill-table">Table 5</span>
+          </div>
+          <p class="sheet-subtitle" id="bill-subtitle">Pay cash at table</p>
+        </div>
+        <button class="icon-btn close-btn" type="button" aria-label="Close bill" data-close-modal="bill-modal">
+          <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+      </header>
+      <div class="sheet-body" id="bill-body"></div>
+      <footer class="sheet-footer" id="bill-footer"></footer>
+    </section>
+  </div>
+
+  <section class="success-screen" id="success-screen" role="dialog" aria-modal="true" aria-labelledby="success-title" hidden>
+    <div class="success-pattern" aria-hidden="true"></div>
+    <header class="success-header">
+      <span class="success-mark" aria-hidden="true">
+        <svg class="icon"><use href="#icon-check"></use></svg>
+      </span>
+      <span class="success-brand" id="success-brand">Karahi House</span>
+    </header>
+
+    <div class="success-main">
+      <div class="receipt">
+        <span class="status-stamp" aria-label="Order status: Received">Received</span>
+
+        <div class="receipt-check" aria-hidden="true">
+          <svg class="icon"><use href="#icon-check"></use></svg>
+        </div>
+        <p class="receipt-kicker">Order placed</p>
+        <h2 class="receipt-title" id="success-title" tabindex="-1">Order received</h2>
+        <p class="receipt-desc" id="success-desc">The kitchen has your order. Pay cash at your table when it arrives.</p>
+
+        <div class="order-number-block">
+          <span class="meta-label">Order number</span>
+          <strong class="order-number" id="success-order-number">ORD-1025</strong>
+        </div>
+
+        <dl class="receipt-meta">
+          <div>
+            <dt id="success-table-label">Table</dt>
+            <dd id="success-table">5</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd id="success-total">Rs. 0</dd>
+          </div>
+          <div>
+            <dt>Placed</dt>
+            <dd id="success-time">&mdash;</dd>
+          </div>
+        </dl>
+
+        <div class="receipt-divider" aria-hidden="true"></div>
+
+        <div class="tracking-block" aria-labelledby="tracking-kicker">
+          <div class="tracking-head">
+            <span class="tracking-kicker" id="tracking-kicker">Live status</span>
+            <span class="tracking-refresh">Updates automatically every 10 seconds.</span>
+          </div>
+          <ol class="tracking-steps" id="success-steps" aria-label="Order tracking"></ol>
+          <p class="tracking-message" id="success-status-message" aria-live="polite">Preparing your food</p>
+        </div>
+
+        <div class="receipt-divider" aria-hidden="true"></div>
+        <p class="receipt-cash">
+          <svg class="icon" aria-hidden="true"><use href="#icon-cash"></use></svg>
+          <span id="success-cash-note">Pay cash at table</span>
+        </p>
+
+        <div class="feedback-card" id="feedback-card" hidden>
+          <p class="feedback-kicker">Your feedback</p>
+          <h3 class="feedback-title">How was your meal?</h3>
+          <p class="feedback-text">Rate your experience and leave a comment for the restaurant.</p>
+
+          <form class="feedback-form" id="feedback-form" novalidate>
+            <div class="feedback-stars" id="feedback-stars" role="group" aria-label="Star rating">
+              <button class="feedback-star" type="button" data-star="1" aria-pressed="false" aria-label="1 out of 5 stars">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </button>
+              <button class="feedback-star" type="button" data-star="2" aria-pressed="false" aria-label="2 out of 5 stars">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </button>
+              <button class="feedback-star" type="button" data-star="3" aria-pressed="false" aria-label="3 out of 5 stars">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </button>
+              <button class="feedback-star" type="button" data-star="4" aria-pressed="false" aria-label="4 out of 5 stars">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </button>
+              <button class="feedback-star" type="button" data-star="5" aria-pressed="false" aria-label="5 out of 5 stars">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </button>
+            </div>
+
+            <label class="sr-only" for="feedback-comment">Comment (optional)</label>
+            <textarea class="feedback-comment" id="feedback-comment" rows="3" maxlength="300" placeholder="Tell us what you liked or what we can improve…"></textarea>
+            <p class="feedback-error" id="feedback-error" role="alert" hidden></p>
+            <button class="feedback-submit" type="submit">Submit feedback</button>
+          </form>
+
+          <div class="feedback-thanks" id="feedback-thanks" hidden>
+            <span class="feedback-thanks-icon" aria-hidden="true">
+              <svg class="icon"><use href="#icon-check"></use></svg>
+            </span>
+            <div>
+              <strong>Thank you for your feedback</strong>
+              <p>The restaurant will review your comment before it appears on the menu.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="success-back" id="success-back" type="button">
+        <span>Back to menu</span>
+        <svg class="icon icon--directional" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+      </button>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <p class="sr-only" id="cart-announcer" aria-live="polite" aria-atomic="true"></p>
+
+  <noscript>
+    <div class="noscript">This menu needs JavaScript to load. Please enable JavaScript or ask our staff for a printed menu.</div>
+  </noscript>
+</body>
+</html>
