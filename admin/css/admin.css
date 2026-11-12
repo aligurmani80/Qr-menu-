@@ -2240,6 +2240,17 @@ svg {
   border: 1px solid #ECE7DC;
   border-radius: 14px;
   background: #FFFFFF;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.qr-frame.is-generating {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.14);
+}
+
+.qr-frame.qr-frame--generated {
+  border-color: #2C6245;
+  box-shadow: 0 0 0 4px rgba(44, 98, 69, 0.16);
 }
 
 .qr-frame canvas,
@@ -2958,6 +2969,19 @@ svg {
 
   .deal-selected-row {
     flex-wrap: wrap;
+  }
+
+  .deal-picker-tools {
+    flex-direction: column;
+  }
+
+  .deal-picker-tools .select-field {
+    width: 100%;
+  }
+
+  .deal-picker-list,
+  .deal-selected {
+    overflow-x: hidden;
   }
 }
 

@@ -3520,6 +3520,9 @@
       case "table-qr-retry":
         renderTableQrHolders();
         break;
+      case "table-generate":
+        generateTableQr(Number(actionElement.dataset.tableNumber), actionElement);
+        break;
       case "table-download":
         downloadTableQr(Number(actionElement.dataset.tableNumber), actionElement);
         break;
@@ -7256,6 +7259,40 @@
     openDealForm(null, { duplicateOf: deal });
   }
 
+  function removeDealFromCart(dealId) {
+    const cartKey = Tenant.storageKeys(tenantRestaurantId).cart;
+    const cart = readJson(cartKey);
+    if (!cart || typeof cart !== "object") return;
+
+    const itemId = `deal:${dealId}`;
+    let changed = false;
+    const items =
+      cart.items && typeof cart.items === "object" ? { ...cart.items } : {};
+    if (Object.prototype.hasOwnProperty.call(items, itemId)) {
+      delete items[itemId];
+      changed = true;
+    }
+
+    const legacyDeals =
+      cart.deals && typeof cart.deals === "object" ? { ...cart.deals } : {};
+    if (Object.prototype.hasOwnProperty.call(legacyDeals, dealId)) {
+      delete legacyDeals[dealId];
+      changed = true;
+    }
+
+    if (!changed) return;
+
+    const nextCart = { ...cart, items };
+    if (Object.keys(legacyDeals).length) nextCart.deals = legacyDeals;
+    else delete nextCart.deals;
+
+    try {
+      writeJson(cartKey, nextCart);
+    } catch {
+      // The customer menu also prunes deleted deals the next time it loads.
+    }
+  }
+
   function deleteDeal(dealId) {
     const deal = getDeals().find((entry) => entry.id === dealId);
     if (!deal) return;
@@ -7273,6 +7310,7 @@
           showToast(errorMessage(error), "error");
           return false;
         }
+        removeDealFromCart(dealId);
         showToast(`${deal.name} deleted.`);
         renderCurrentPage({ keepScroll: true });
         return true;
