@@ -365,6 +365,34 @@
     return Array.isArray(stored) ? stored.filter((member) => member && typeof member === "object") : [];
   }
 
+  function ensureSampleMenuItems(restaurantId) {
+    const keys = storageKeys(restaurantId);
+    const seedKey = scopedKey("karahiHouse.menuSamplesSeeded.v1", restaurantId);
+
+    try {
+      if (window.localStorage.getItem(seedKey) === "1") return false;
+
+      const stored = readJson(keys.menu);
+      const sampleItems = Array.isArray(config.menu)
+        ? config.menu.filter((item) => item && item.sample === true)
+        : [];
+
+      if (!Array.isArray(stored) || !sampleItems.length) {
+        window.localStorage.setItem(seedKey, "1");
+        return false;
+      }
+
+      const existingIds = new Set(stored.map((item) => String((item && item.id) || "")));
+      const missing = sampleItems.filter((item) => !existingIds.has(String(item.id)));
+      if (missing.length) writeJson(keys.menu, [...stored, ...missing.map((item) => ({ ...item }))]);
+
+      window.localStorage.setItem(seedKey, "1");
+      return missing.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   window.Tenant = {
     DEFAULT_RESTAURANT_ID,
     REGISTRY_KEY,
@@ -388,5 +416,6 @@
     readRestaurantSettings,
     saveRestaurantSettings,
     readRestaurantStaff,
+    ensureSampleMenuItems,
   };
 })();
