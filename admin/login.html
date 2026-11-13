@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0F2E1F">
+  <meta name="theme-color" content="#FF5A00">
   <meta name="color-scheme" content="light">
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="Sign in to the local restaurant admin for menu, orders, tables and offers.">
-  <title>Sign in | Karahi House Admin</title>
+  <title>Sign in | Restaurant Admin</title>
 
-  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="../assets/favicon.png" sizes="64x64">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/admin.css?v=20261113g">
 
-  <script src="../js/config.js" defer></script>
-  <script src="../js/tenant.js" defer></script>
-  <script src="../js/demo-data.js" defer></script>
-  <script src="js/admin.js" defer></script>
+  <script src="../config.js?v=20261113g" defer></script>
+  <script src="../js/tenant.js?v=20261113g" defer></script>
+  <script src="js/admin.js?v=20261113g" defer></script>
+  <script src="../js/pwa.js?v=20261113h" defer></script>
 </head>
 <body class="login-page" data-page="login">
   <main class="login-shell">
@@ -35,7 +36,7 @@
           <span class="brand-dot" aria-hidden="true"></span>
         </span>
         <span class="login-brand-copy">
-          <strong data-login-name>Karahi House</strong>
+          <strong data-login-name>Restaurant</strong>
           <span>Restaurant Admin</span>
         </span>
       </a>
@@ -75,7 +76,7 @@
             </svg>
             <span class="brand-dot" aria-hidden="true"></span>
           </span>
-          <strong data-login-name>Karahi House</strong>
+          <strong data-login-name>Restaurant</strong>
         </div>
 
         <p class="login-eyebrow">Restaurant admin</p>
@@ -109,7 +110,7 @@
           <span>One restaurant only</span>
         </div>
 
-        <p class="login-foot">Credentials are placeholders in <code>js/config.js</code>. Replace them with the owner's real login before going live.</p>
+        <p class="login-foot">The admin login lives in <code>config.js</code> at the project root. Change it there for every new copy.</p>
       </div>
     </section>
   </main>

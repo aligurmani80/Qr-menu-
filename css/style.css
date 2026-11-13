@@ -1,6 +1,6 @@
 /* ==========================================================================
-   KARAHI HOUSE — PHASE 1 CUSTOMER MENU
-   Tokens below mirror js/config.js > theme.colors. The config values are
+   CUSTOMER MENU
+   Tokens below mirror config.js > theme.colors. The config values are
    applied at runtime, so the restaurant can retheme without touching CSS.
    ========================================================================== */
 
@@ -2289,6 +2289,14 @@ svg {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+}
+
+.mode-options.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mode-option[hidden] {
+  display: none;
 }
 
 .mode-option {

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   KARAHI HOUSE — PHASE 2 ADMIN + PHASE 3A OPERATIONS
+   RESTAURANT ADMIN + SUPER ADMIN
    Shared admin shell, local data store and page logic for /admin.
    Front-end only: every change is saved to localStorage on this device.
    ========================================================================== */
@@ -14,19 +14,22 @@
     return;
   }
 
-  if (window.DemoData && typeof window.DemoData.ensure === "function") {
-    window.DemoData.ensure();
-  }
-
   const page = document.body.dataset.page || "dashboard";
   const currency = CONFIG.currency || {};
   const storageConfig = CONFIG.storage || {};
   const adminConfig = CONFIG.admin || {};
+  const superAdminConfig = CONFIG.superAdmin || {};
   const restaurantConfig = CONFIG.restaurant || {};
+  const copyStrings = typeof COPY !== "undefined" && COPY && typeof COPY === "object" ? COPY : {};
   const categories = Array.isArray(CONFIG.categories) ? CONFIG.categories : [];
   const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const VIRTUAL_CATEGORY_IDS = new Set(["trending", "signature", "deals"]);
+  const foodCategories = categories.filter((category) => !VIRTUAL_CATEGORY_IDS.has(category.id));
   const currencySymbol = String(currency.symbol || "Rs.");
   const sessionKey = adminConfig.sessionKey || "karahiHouse.adminSession.v1";
+  const superSessionKey = superAdminConfig.sessionKey || "qrMenu.v2.superAdminSession";
+  const SUPER_ROLE = "SuperAdmin";
+  const SUPER_ADMIN_NAME = "Super Admin";
 
   function readRawAdminSession() {
     try {
@@ -58,6 +61,7 @@
       sequence: scoped.sequence,
       waiterCalls: scoped.waiterCalls,
       billRequests: scoped.billRequests,
+      myOrders: scoped.myOrders,
       feedback: scoped.feedback,
     };
   }
@@ -85,6 +89,7 @@
   const BILL_PAID = "Paid";
   const SERVICE_HISTORY_LIMIT = 8;
   const STAFF_ROLES = ["Owner", "Manager", "Kitchen", "Waiter"];
+  const EDITABLE_STAFF_ROLES = ["Manager", "Kitchen", "Waiter"];
   const DEFAULT_STAFF_PASSWORD = "[STAFF_PASSWORD]";
   const ROLE_ACCESS = {
     Owner: ["dashboard", "menu", "orders", "kitchen", "tables", "offers", "reports", "feedback", "staff", "settings"],
@@ -97,6 +102,7 @@
     Manager: "index.html",
     Kitchen: "kitchen.html",
     Waiter: "orders.html",
+    SuperAdmin: "index.html",
   };
   const KITCHEN_HIGHLIGHT_MS = 60000;
   const ORDER_WATCH_MS = 5000;
@@ -116,6 +122,7 @@
     feedback: { title: "Guest Feedback", subtitle: "Review guest ratings before they appear on the menu." },
     staff: { title: "Staff", subtitle: "Manage who can sign in and what each role can open." },
     settings: { title: "Settings", subtitle: "Restaurant name, logo, timings and service details." },
+    super: { title: "Super Admin", subtitle: "Copy status, plan, restaurant login and data reset." },
   };
 
   const NAV_ITEMS = [
@@ -129,6 +136,7 @@
     { id: "feedback", label: "Guest Feedback", href: "feedback.html", icon: "star" },
     { id: "staff", label: "Staff", href: "staff.html", icon: "users" },
     { id: "settings", label: "Settings", href: "settings.html", icon: "gear" },
+    { id: "super", label: "Super Admin", href: "super.html", icon: "shield", divider: true },
   ];
 
   const ICONS = {
@@ -158,6 +166,9 @@
     gear:
       '<circle cx="12" cy="12" r="3.2"></circle>' +
       '<path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8.96 4.6h.08A1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.08a1.7 1.7 0 0 0 1.55 1.02H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.9Z"></path>',
+    shield:
+      '<path d="M12 3 5 5.8v5.4c0 4.5 2.9 7.7 7 9.3 4.1-1.6 7-4.8 7-9.3V5.8L12 3Z"></path>' +
+      '<path d="m9.2 12 2 2 3.6-3.8"></path>',
     logout:
       '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>' +
       '<path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path>',
@@ -439,11 +450,13 @@
     return category ? category.label : String(categoryId || "Uncategorised");
   }
 
+  // Config paths are written from the project root, but every admin page
+  // lives one folder deep.
   function resolveImageSource(source) {
     const value = String(source || "").trim();
     if (!value) return "";
-    if (value.startsWith("assets/")) return `../${value}`;
-    return value;
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|\.\.?\/)/i.test(value)) return value;
+    return `../${value}`;
   }
 
   function imageFallbackMarkup(source, name, className = "thumb") {
@@ -484,9 +497,9 @@
 
   const settingsDefaults = {
     restaurantName: String(restaurantConfig.name || "Restaurant").trim() || "Restaurant",
-    logo: String((CONFIG.settings && CONFIG.settings.logo) || "").trim(),
+    logo: String(restaurantConfig.logo || "").trim(),
     whatsappNumber: String(restaurantConfig.whatsappNumber || "[RESTAURANT_WHATSAPP_NUMBER]"),
-    openingTiming: String((CONFIG.settings && CONFIG.settings.openingTiming) || "").trim(),
+    openingTiming: String(restaurantConfig.openingTiming || "").trim(),
     paymentNote: String((CONFIG.payment && CONFIG.payment.note) || "Pay cash at table").trim(),
   };
 
@@ -494,12 +507,9 @@
     const stored = readJson(KEYS.settings);
     const merged = { ...settingsDefaults };
 
+    // Restaurant identity always comes from config.js. Only service details
+    // can be adjusted inside the admin on this device.
     if (stored && typeof stored === "object" && !Array.isArray(stored)) {
-      if (typeof stored.restaurantName === "string" && stored.restaurantName.trim()) {
-        merged.restaurantName = stored.restaurantName.trim();
-      }
-      if (typeof stored.logo === "string") merged.logo = stored.logo;
-      if (typeof stored.whatsappNumber === "string") merged.whatsappNumber = stored.whatsappNumber;
       if (typeof stored.openingTiming === "string") merged.openingTiming = stored.openingTiming;
       if (typeof stored.paymentNote === "string" && stored.paymentNote.trim()) {
         merged.paymentNote = stored.paymentNote.trim();
@@ -511,9 +521,9 @@
 
   function saveSettings(nextSettings) {
     const payload = {
-      restaurantName: nextSettings.restaurantName,
-      logo: nextSettings.logo,
-      whatsappNumber: nextSettings.whatsappNumber,
+      restaurantName: settingsDefaults.restaurantName,
+      logo: settingsDefaults.logo,
+      whatsappNumber: settingsDefaults.whatsappNumber,
       openingTiming: nextSettings.openingTiming,
       paymentNote: nextSettings.paymentNote,
     };
@@ -530,7 +540,7 @@
 
   function getMenuItems() {
     if (window.Tenant && typeof Tenant.ensureSampleMenuItems === "function") {
-      Tenant.ensureSampleMenuItems(tenantRestaurantId);
+      Tenant.ensureSampleMenuItems();
     }
 
     const stored = readJson(KEYS.menu);
@@ -548,11 +558,13 @@
 
   function getTables() {
     const stored = readJson(KEYS.tables);
-    const source = Array.isArray(stored)
+    const tableCount = Math.min(999, Math.max(1, Number(restaurantConfig.tableCount) || 12));
+    const source = Array.isArray(stored) && stored.length
       ? stored
-      : Array.isArray(CONFIG.tables && CONFIG.tables.defaults)
-        ? CONFIG.tables.defaults
-        : [];
+      : Array.from({ length: tableCount }, (_, index) => ({
+          number: index + 1,
+          name: `Table ${index + 1}`,
+        }));
 
     return source
       .map((table) => {
@@ -1197,10 +1209,12 @@
     const mode = orderMode(order);
 
     if (mode === "dine-in") {
+      const customer = orderCustomerLine(order);
       return (
         `<span class="order-destination">` +
         tableFlagHtml(orderTableNumber(order), options) +
         `<span class="mode-tag">Dine-in</span>` +
+        (customer ? `<span class="mode-contact">${escapeHtml(customer)}</span>` : "") +
         `</span>`
       );
     }
@@ -1257,7 +1271,7 @@
     if (!nextStatus) return null;
 
     const role = currentRole();
-    if (role === "Owner" || role === "Manager") return nextStatus;
+    if (role === "Owner" || role === "Manager" || role === SUPER_ROLE) return nextStatus;
     if (role === "Kitchen") {
       return KITCHEN_STATUSES.includes(order.status) ? nextStatus : null;
     }
@@ -1309,41 +1323,14 @@
   function seedStaff(restaurantId = tenantRestaurantId) {
     const restaurant = getRestaurantRecord(restaurantId);
     const credentials = ownerCredentialsFor(restaurantId);
-    const owner = {
-      id: "staff-owner",
-      name: String((restaurant && restaurant.ownerName) || "Restaurant Owner").trim() || "Restaurant Owner",
-      role: "Owner",
-      username: credentials.username,
-      password: credentials.password,
-      active: true,
-    };
-
-    if (restaurantId !== Tenant.DEFAULT_RESTAURANT_ID) return [owner];
-
     return [
-      owner,
       {
-        id: "staff-manager",
-        name: "Duty Manager",
-        role: "Manager",
-        username: "manager",
-        password: DEFAULT_STAFF_PASSWORD,
-        active: true,
-      },
-      {
-        id: "staff-kitchen",
-        name: "Kitchen Lead",
-        role: "Kitchen",
-        username: "kitchen",
-        password: DEFAULT_STAFF_PASSWORD,
-        active: true,
-      },
-      {
-        id: "staff-waiter",
-        name: "Floor Waiter",
-        role: "Waiter",
-        username: "waiter",
-        password: DEFAULT_STAFF_PASSWORD,
+        id: "staff-owner",
+        name: String((restaurant && restaurant.ownerName) || restaurantConfig.ownerName || "Restaurant Owner").trim() ||
+          "Restaurant Owner",
+        role: "Owner",
+        username: credentials.username,
+        password: credentials.password,
         active: true,
       },
     ];
@@ -1371,12 +1358,29 @@
   function readStaffFor(restaurantId, options = {}) {
     const seed = options.seed !== false;
     const stored = readJson(Tenant.storageKeys(restaurantId).staff);
-    if (!Array.isArray(stored) || !stored.length) {
-      return seed ? seedStaff(restaurantId) : [];
+    const restaurant = getRestaurantRecord(restaurantId);
+    const credentials = ownerCredentialsFor(restaurantId);
+
+    // The owner login is controlled by config.js, so keep the stored owner
+    // record in sync even after the admin credentials change.
+    if (Array.isArray(stored) && stored.length) {
+      const members = stored.map((member, index) => normalizeStaffMember(member, index)).filter(Boolean);
+
+      if (members.length) {
+        const owner = members.find((member) => member.role === "Owner");
+        if (owner) {
+          owner.username = credentials.username;
+          owner.password = credentials.password;
+          owner.name =
+            String((restaurant && restaurant.ownerName) || restaurantConfig.ownerName || owner.name).trim() ||
+            owner.name;
+          owner.active = true;
+        }
+        return members;
+      }
     }
 
-    const members = stored.map((member, index) => normalizeStaffMember(member, index)).filter(Boolean);
-    return members.length ? members : seed ? seedStaff(restaurantId) : [];
+    return seed ? seedStaff(restaurantId) : [];
   }
 
   function getStaff() {
@@ -1397,7 +1401,62 @@
     };
   }
 
+  function readSuperAdminSession() {
+    try {
+      const raw = window.sessionStorage.getItem(superSessionKey);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || parsed.kind !== "superadmin") return null;
+
+      const credentials =
+        typeof Tenant.getSuperAdmin === "function" ? Tenant.getSuperAdmin() : {};
+      const configured = String(credentials.username || "").trim().toLowerCase();
+      const stored = String(parsed.username || "").trim().toLowerCase();
+      if (!credentials.enabled || !configured || stored !== configured) return null;
+
+      return {
+        id: "super-admin",
+        username: String(parsed.username || "").trim(),
+        name: SUPER_ADMIN_NAME,
+        role: SUPER_ROLE,
+        kind: "superadmin",
+        restaurantId: Tenant.DEFAULT_RESTAURANT_ID,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function getSuperAdminSession() {
+    return readSuperAdminSession();
+  }
+
+  function setSuperAdminSession(member) {
+    try {
+      if (member) {
+        const credentials = Tenant.getSuperAdmin();
+        window.sessionStorage.setItem(
+          superSessionKey,
+          JSON.stringify({
+            kind: "superadmin",
+            username: credentials.username,
+            restaurantId: Tenant.DEFAULT_RESTAURANT_ID,
+          })
+        );
+        window.sessionStorage.removeItem(sessionKey);
+      } else {
+        window.sessionStorage.removeItem(superSessionKey);
+      }
+    } catch {
+      // A blocked sessionStorage means the guard redirects on the next page.
+    }
+  }
+
   function getSession() {
+    const superSession = getSuperAdminSession();
+    if (superSession) return superSession;
+
     try {
       const raw = window.sessionStorage.getItem(sessionKey);
       if (!raw) return null;
@@ -1439,6 +1498,7 @@
             restaurantId: member.restaurantId || tenantRestaurantId,
           })
         );
+        window.sessionStorage.removeItem(superSessionKey);
       } else {
         window.sessionStorage.removeItem(sessionKey);
       }
@@ -1450,6 +1510,8 @@
   function getActiveSession() {
     const session = getSession();
     if (!session) return null;
+
+    if (session.kind === "superadmin") return session;
 
     const restaurantId = session.restaurantId || Tenant.DEFAULT_RESTAURANT_ID;
     if (!Tenant.getRestaurant(restaurantId)) return null;
@@ -1490,7 +1552,7 @@
         return {
           ok: false,
           blocked: true,
-          message: "Your plan has expired. Please contact support to renew.",
+          message: "Plan expired. Contact support.",
         };
       }
 
@@ -1498,7 +1560,7 @@
         return {
           ok: false,
           blocked: true,
-          message: "This restaurant is disabled. Please contact support.",
+          message: "Plan expired. Contact support.",
         };
       }
 
@@ -1512,13 +1574,47 @@
     return { ok: false, message: "Wrong username or password" };
   }
 
+  function authenticateSuperLogin(username, password) {
+    const credentials =
+      typeof Tenant.getSuperAdmin === "function" ? Tenant.getSuperAdmin() : {};
+    const wanted = String(username || "").trim();
+    const secret = String(password || "");
+
+    if (
+      credentials.enabled &&
+      wanted.toLowerCase() === String(credentials.username || "").toLowerCase() &&
+      secret === credentials.password
+    ) {
+      return {
+        ok: true,
+        member: {
+          id: "super-admin",
+          username: credentials.username,
+          name: SUPER_ADMIN_NAME,
+          role: SUPER_ROLE,
+          kind: "superadmin",
+          restaurantId: Tenant.DEFAULT_RESTAURANT_ID,
+        },
+      };
+    }
+
+    return { ok: false, message: "Wrong username or password" };
+  }
+
   function currentSession() {
     return state.session || getSession();
   }
 
   function currentRole() {
     const session = currentSession();
-    return session && STAFF_ROLES.includes(session.role) ? session.role : "Owner";
+    if (session && (STAFF_ROLES.includes(session.role) || session.role === SUPER_ROLE)) {
+      return session.role;
+    }
+    return "Owner";
+  }
+
+  function isSuperAdmin() {
+    return currentRole() === SUPER_ROLE;
   }
 
   function roleHome(role = currentRole()) {
@@ -1526,22 +1622,26 @@
   }
 
   function canAccessPage(pageId, role = currentRole()) {
-    if (role === "Owner") return true;
+    if (pageId === "super") return role === SUPER_ROLE;
+    if (role === SUPER_ROLE || role === "Owner") return true;
     return (ROLE_ACCESS[role] || []).includes(pageId);
   }
 
   function isOwner() {
-    return currentRole() === "Owner";
+    const role = currentRole();
+    return role === "Owner" || role === SUPER_ROLE;
   }
 
   function canSendOrderAlerts() {
     const role = currentRole();
-    return role === "Owner" || role === "Manager";
+    return role === "Owner" || role === "Manager" || role === SUPER_ROLE;
   }
 
   function signOut() {
+    const wasSuper = currentRole() === SUPER_ROLE;
+    setSuperAdminSession(null);
     setSession(null);
-    window.location.replace("login.html");
+    window.location.replace(wasSuper ? "super-login.html" : "login.html");
   }
 
   /* ------------------------------------------------------------------------
@@ -2046,15 +2146,13 @@
   function customerMenuHref() {
     const url = new URL("../index.html", window.location.href);
     const queryParam = (CONFIG.table && CONFIG.table.queryParam) || "table";
-    const defaultTable = Number(CONFIG.table && CONFIG.table.defaultNumber) || 1;
-    url.searchParams.set("restaurant", tenantRestaurantId);
-    url.searchParams.set(queryParam, String(defaultTable));
+    url.searchParams.set(queryParam, "1");
     return url.href;
   }
 
   function brandMarkHtml(settings, size = "md") {
     const inner = settings.logo
-      ? `<img src="${escapeHtml(settings.logo)}" alt="">`
+      ? `<img src="${escapeHtml(resolveImageSource(settings.logo))}" alt="">`
       : `${icon("qr")}<span class="brand-dot" aria-hidden="true"></span>`;
 
     return (
@@ -2122,6 +2220,9 @@
 
     const settings = getSettings();
     const session = state.session || getSession() || { id: "", name: "Restaurant Admin", role: "Owner", username: "" };
+    const isSuperSession = session.role === SUPER_ROLE;
+    const roleLabel = isSuperSession ? "Super Admin" : session.role;
+    const plan = Tenant.planStatus();
     const pending = getPendingOrders().length;
     const activeId = getActiveNavId();
     const navItems = NAV_ITEMS.filter((item) => canAccessPage(item.id, session.role));
@@ -2134,7 +2235,7 @@
       brandMarkHtml(settings, "lg") +
       `<div class="sidebar-brand-copy">` +
       `<strong data-restaurant-name>${escapeHtml(settings.restaurantName)}</strong>` +
-      `<span>Restaurant Admin</span>` +
+      `<span${isSuperSession ? ' class="super-side-label"' : ""}>${isSuperSession ? "SUPER ADMIN" : "Restaurant Admin"}</span>` +
       `</div>` +
       `</div>` +
       `<div class="nav-scroll"><nav class="admin-nav" aria-label="Admin sections">` +
@@ -2157,7 +2258,7 @@
       brandMarkHtml(settings, "sm") +
       `<div class="topbar-brand-copy">` +
       `<strong data-restaurant-name>${escapeHtml(settings.restaurantName)}</strong>` +
-      `<span>Restaurant Admin · ${escapeHtml(session.role)}</span>` +
+      `<span>${isSuperSession ? "SUPER ADMIN · Full access" : `Restaurant Admin · ${escapeHtml(roleLabel)}`}</span>` +
       `</div>` +
       `</div>` +
       `<form class="topbar-search" role="search" data-global-search>` +
@@ -2180,18 +2281,32 @@
       `<div class="popover-wrap">` +
       `<button class="profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="profile-popover" data-popover-trigger data-shell-action="toggle-profile">` +
       `<span class="avatar" aria-hidden="true">${escapeHtml(initialsFor(session.name))}</span>` +
-      `<span class="profile-text"><strong>${escapeHtml(session.name)}</strong><span>${escapeHtml(session.role)}</span></span>` +
+      `<span class="profile-text"><strong>${escapeHtml(session.name)}</strong><span>${escapeHtml(roleLabel)}</span></span>` +
       `${icon("chevron-down", "chevron")}` +
       `</button>` +
       `<div class="popover profile-popover" id="profile-popover" hidden>` +
-      `<div class="profile-popover-head"><strong data-restaurant-name>${escapeHtml(settings.restaurantName)}</strong><span>${escapeHtml(session.name)} · ${escapeHtml(session.role)}</span></div>` +
-      (session.role === "Owner" ? `<a href="staff.html">${icon("users")}Staff</a>` : "") +
-      (session.role === "Owner" ? `<a href="settings.html">${icon("gear")}Settings</a>` : "") +
+      `<div class="profile-popover-head"><strong data-restaurant-name>${escapeHtml(settings.restaurantName)}</strong><span>${escapeHtml(session.name)} · ${escapeHtml(roleLabel)}</span></div>` +
+      (isSuperSession || session.role === "Owner" ? `<a href="staff.html">${icon("users")}Staff</a>` : "") +
+      (isSuperSession || session.role === "Owner" ? `<a href="settings.html">${icon("gear")}Settings</a>` : "") +
+      (isSuperSession ? `<a href="super.html">${icon("shield")}Super Admin control</a>` : "") +
       `<button type="button" data-shell-action="logout">${icon("logout")}Log out</button>` +
       `</div>` +
       `</div>` +
       `</div>` +
       `</header>` +
+      (isSuperSession
+        ? `<div class="super-strip" role="status">` +
+          `<span class="super-badge">SUPER ADMIN</span>` +
+          `<span class="super-strip-text">${
+            plan.disabled
+              ? "Copy disabled — customer menu and restaurant admin login are blocked."
+              : plan.expired
+                ? "Plan expired — customer menu and restaurant admin login are blocked."
+                : "Full access to every admin page, plan and copy setting."
+          }</span>` +
+          `<a class="super-strip-link" href="super.html">Open control</a>` +
+          `</div>`
+        : "") +
       `<main class="admin-main" id="admin-view" tabindex="-1">` +
       `<div class="page-loader"><span class="spinner" aria-hidden="true"></span><span>Loading admin…</span></div>` +
       `</main>` +
@@ -2213,7 +2328,7 @@
       element.setAttribute("data-initial", initialFor(settings.restaurantName));
       element.classList.remove("is-image-broken");
       element.innerHTML = settings.logo
-        ? `<img src="${escapeHtml(settings.logo)}" alt="">`
+        ? `<img src="${escapeHtml(resolveImageSource(settings.logo))}" alt="">`
         : `${icon("qr")}<span class="brand-dot" aria-hidden="true"></span>`;
     });
 
@@ -2601,11 +2716,11 @@
      ------------------------------------------------------------------------ */
 
   function canHandleService() {
-    return ["Owner", "Manager", "Waiter"].includes(currentRole());
+    return ["Owner", "Manager", "Waiter", SUPER_ROLE].includes(currentRole());
   }
 
   function canMarkBillsPaid() {
-    return ["Owner", "Manager"].includes(currentRole());
+    return ["Owner", "Manager", SUPER_ROLE].includes(currentRole());
   }
 
   function pendingWaiterCalls(calls = getWaiterCalls()) {
@@ -3377,7 +3492,7 @@
       `<h1>${escapeHtml(title)}</h1>` +
       `<p>${escapeHtml(message)}</p>` +
       `<a class="btn btn-primary" href="login.html">${icon("logout")}Back to sign in</a>` +
-      `<p class="access-denied-note">Contact the Super Admin to renew or enable this restaurant.</p>` +
+      `<p class="access-denied-note">Ask the Super Admin to mark the fee Paid, extend the expiry date or enable this copy.</p>` +
       `</section>` +
       `</main>`;
   }
@@ -3400,6 +3515,7 @@
       case "feedback": renderFeedbackPage(view); break;
       case "staff": renderStaffPage(view); break;
       case "settings": renderSettingsPage(view); break;
+      case "super": renderSuperPage(view); break;
       case "dashboard":
       default:
         renderDashboardPage(view);
@@ -3579,9 +3695,6 @@
       case "feedback-delete":
         deleteFeedbackEntry(actionElement.dataset.feedbackId);
         break;
-      case "settings-logo-remove":
-        removeSettingsLogo();
-        break;
       case "reports-apply":
         renderReportsContent();
         break;
@@ -3600,6 +3713,15 @@
       case "staff-delete":
         deleteStaffMember(actionElement.dataset.staffId);
         break;
+      case "super-toggle-copy":
+        toggleSuperCopy();
+        break;
+      case "super-clear-orders":
+        clearTestOrders();
+        break;
+      case "super-reset-demo":
+        resetDemoData();
+        break;
       default:
         break;
     }
@@ -3617,6 +3739,11 @@
     if (target.matches("[data-orders-search]")) {
       state.ordersQuery = target.value;
       renderOrdersList();
+      return;
+    }
+
+    if (target.matches("[data-super-logo-path]")) {
+      updateSuperLogoPreview(state.settingsLogoDraft || target.value);
     }
   }
 
@@ -3690,8 +3817,8 @@
       return;
     }
 
-    if (target.matches("[data-logo-input]")) {
-      handleLogoSelection(target);
+    if (target.matches("[data-super-logo-file]")) {
+      handleSuperLogoFile(target);
     }
   }
 
@@ -3732,6 +3859,18 @@
     if (form.dataset.form === "staff") {
       event.preventDefault();
       saveStaffForm(form);
+      return;
+    }
+
+    if (form.dataset.form === "super-plan") {
+      event.preventDefault();
+      saveSuperPlanForm(form);
+      return;
+    }
+
+    if (form.dataset.form === "super-admin") {
+      event.preventDefault();
+      saveSuperAdminForm(form);
     }
   }
 
@@ -4198,7 +4337,7 @@
 
   function menuFormHtml(item) {
     const isEditing = Boolean(item);
-    const categoryOptions = categories
+    const categoryOptions = foodCategories
       .map(
         (category) =>
           `<option value="${escapeHtml(category.id)}"${item && item.category === category.id ? " selected" : ""}>${escapeHtml(category.label)}</option>`
@@ -4359,7 +4498,7 @@
       return;
     }
 
-    if (!categoryById.has(category)) {
+    if (!categoryById.has(category) || VIRTUAL_CATEGORY_IDS.has(category)) {
       showFormError(form, "Choose a category for this item.");
       form.elements.category.focus();
       return;
@@ -5150,10 +5289,10 @@
       `</td>` +
       `<td class="cell-actions">` +
       `<div class="inline-actions">` +
-      `<button class="icon-button" type="button" data-action="staff-edit" data-staff-id="${escapeHtml(member.id)}" aria-label="Edit ${escapeHtml(member.name)}">${icon("edit")}</button>` +
       (isOwnerAccount
-        ? ""
-        : `<button class="icon-button icon-button--danger" type="button" data-action="staff-delete" data-staff-id="${escapeHtml(member.id)}" aria-label="Delete ${escapeHtml(member.name)}">${icon("trash")}</button>`) +
+        ? `<span class="cell-sub">Managed by Super Admin</span>`
+        : `<button class="icon-button" type="button" data-action="staff-edit" data-staff-id="${escapeHtml(member.id)}" aria-label="Edit ${escapeHtml(member.name)}">${icon("edit")}</button>` +
+          `<button class="icon-button icon-button--danger" type="button" data-action="staff-delete" data-staff-id="${escapeHtml(member.id)}" aria-label="Delete ${escapeHtml(member.name)}">${icon("trash")}</button>`) +
       `</div>` +
       `</td>` +
       `</tr>`
@@ -5212,9 +5351,14 @@
       return;
     }
 
+    if (member && member.role === "Owner") {
+      showToast("The restaurant admin login is managed from Super Admin control.", "warning");
+      return;
+    }
+
     const isEditing = Boolean(member);
     const selectedRole = member ? member.role : "Waiter";
-    const roleOptions = STAFF_ROLES.map(
+    const roleOptions = EDITABLE_STAFF_ROLES.map(
       (role) =>
         `<option value="${role}"${role === selectedRole ? " selected" : ""}>${role}</option>`
     ).join("");
@@ -5289,7 +5433,10 @@
     const existing = existingIndex >= 0 ? members[existingIndex] : null;
 
     if (!name) return setError("Enter the staff member's name.");
-    if (!STAFF_ROLES.includes(role)) return setError("Choose a valid staff role.");
+    if (!EDITABLE_STAFF_ROLES.includes(role)) return setError("Choose a valid staff role.");
+    if (existing && existing.role === "Owner") {
+      return setError("The restaurant admin login is managed by the Super Admin.");
+    }
     if (username.length < 3) return setError("Use at least 3 characters for the username.");
     if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
       return setError("Use letters, numbers, dots, dashes or underscores for the username.");
@@ -5473,6 +5620,7 @@
     const note = kitchenSpecialNote(order);
     const mode = orderMode(order);
     const isDineIn = mode === "dine-in";
+    const customer = orderCustomerLine(order);
     const destinationLabel = isDineIn ? "Table" : orderModeLabel(mode);
     const destinationValue = isDineIn
       ? orderTableNumber(order) || "—"
@@ -5514,6 +5662,7 @@
       `${icon("clock")}<span data-kds-minutes>${elapsed}</span> min</span>` +
       `</div>` +
       `</header>` +
+      (customer ? `<p class="kds-customer">${escapeHtml(customer)}</p>` : "") +
       `<ul class="kds-items">${itemRows}</ul>` +
       (note ? `<p class="kds-note"><span>Note</span>${escapeHtml(note)}</p>` : "") +
       `<footer class="kds-card-foot">` +
@@ -5718,20 +5867,11 @@
 
   const themeColors = (CONFIG.theme && CONFIG.theme.colors) || {};
   const TABLE_NUMBER_LIMIT = 999;
-  const DEMO_MENU_PATH = "../demo/karahi-house/";
   let qrLibraryPromise = null;
 
   function getMenuUrl(tableNumber) {
     const queryParam = (CONFIG.table && CONFIG.table.queryParam) || "table";
-
-    if (tenantRestaurantId === (window.DemoData ? window.DemoData.id : "demo-karahi-house")) {
-      const demoUrl = new URL(DEMO_MENU_PATH, window.location.href);
-      demoUrl.searchParams.set(queryParam, String(tableNumber));
-      return demoUrl.href;
-    }
-
     const url = new URL("../index.html", window.location.href);
-    url.searchParams.set("restaurant", tenantRestaurantId);
     url.searchParams.set(queryParam, String(tableNumber));
     return url.href;
   }
@@ -6512,13 +6652,15 @@
       `<td data-label="Deal price"><span class="cell-strong deal-price-cell">${escapeHtml(formatMoney(deal.dealPrice))}</span></td>` +
       `<td data-label="Savings"><span class="tag tag--success">Save ${escapeHtml(formatMoney(deal.savings))} (${dealSavingsPercent(deal)}%)</span></td>` +
       `<td data-label="Valid from-to"><span class="cell-sub">${escapeHtml(dealDateLabel(deal))}</span></td>` +
-      `<td data-label="Status">${offerStateTag(status)}</td>` +
-      `<td data-label="Actions" class="cell-actions">` +
-      `<div class="deal-actions">` +
+      `<td data-label="Status"><div class="deal-status-cell">` +
+      offerStateTag(status) +
       `<label class="switch-field" title="${deal.active ? "Hide from customer menu" : "Show on customer menu"}">` +
       `<input type="checkbox" data-deal-live data-deal-id="${dealId}"${deal.active ? " checked" : ""} aria-label="Show ${dealName} on the customer menu">` +
       `<span class="switch" aria-hidden="true"></span>` +
       `</label>` +
+      `</div></td>` +
+      `<td data-label="Actions" class="cell-actions">` +
+      `<div class="deal-actions">` +
       `<button class="icon-button icon-button--sm" type="button" data-action="deal-edit" data-deal-id="${dealId}" aria-label="Edit ${dealName}">${icon("edit")}</button>` +
       `<button class="icon-button icon-button--sm" type="button" data-action="deal-duplicate" data-deal-id="${dealId}" aria-label="Duplicate ${dealName}">${icon("copy")}</button>` +
       `<button class="icon-button icon-button--sm icon-button--danger" type="button" data-action="deal-delete" data-deal-id="${dealId}" aria-label="Delete ${dealName}">${icon("trash")}</button>` +
@@ -7524,77 +7666,74 @@
   function logoPreviewHtml(logo, restaurantName) {
     return (
       `<span class="logo-preview${logo ? "" : " logo-preview--empty"}" data-logo-preview data-image-fallback data-initial="${escapeHtml(initialFor(restaurantName))}">` +
-      (logo ? `<img src="${escapeHtml(logo)}" alt="Restaurant logo">` : `${icon("image")}<span class="logo-preview-initial">${escapeHtml(initialFor(restaurantName))}</span>`) +
+      (logo ? `<img src="${escapeHtml(resolveImageSource(logo))}" alt="Restaurant logo">` : `${icon("image")}<span class="logo-preview-initial">${escapeHtml(initialFor(restaurantName))}</span>`) +
       `</span>`
     );
   }
 
-  function updateSettingsLogoPreview(root) {
-    const holder = root.querySelector("[data-logo-preview]");
-    if (!holder) return;
-
-    const settings = getSettings();
-    const nameInput = root.querySelector("[name='restaurantName']");
-    const restaurantName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : settings.restaurantName;
-    const logo = state.settingsLogoDraft === null ? settings.logo : state.settingsLogoDraft;
-
-    const fresh = document.createElement("span");
-    fresh.className = `logo-preview${logo ? "" : " logo-preview--empty"}`;
-    fresh.setAttribute("data-logo-preview", "");
-    fresh.setAttribute("data-image-fallback", "");
-    fresh.setAttribute("data-initial", initialFor(restaurantName));
-    fresh.innerHTML = logo
-      ? `<img src="${escapeHtml(logo)}" alt="Restaurant logo">`
-      : `${icon("image")}<span class="logo-preview-initial">${escapeHtml(initialFor(restaurantName))}</span>`;
-
-    holder.replaceWith(fresh);
+  function settingsFactHtml(label, value, extraClass = "") {
+    return (
+      `<div class="settings-fact${extraClass}"><span>${escapeHtml(label)}</span>` +
+      `<strong>${escapeHtml(value || "—")}</strong></div>`
+    );
   }
 
   function settingsFormHtml(settings) {
+    const restaurant = Tenant.getRestaurant();
+    const plan = Tenant.planStatus();
+    const identityFacts = [
+      ["Restaurant name", restaurant.name],
+      ["Owner name", restaurant.ownerName],
+      ["Phone", restaurant.phone],
+      ["WhatsApp", restaurant.whatsappNumber],
+      ["City", restaurant.city],
+      ["Address", restaurant.address],
+      ["Tables", String(restaurant.tableCount)],
+    ];
+    const planFacts = [
+      ["Plan", plan.name],
+      ["Monthly fee", formatMoney(plan.amount)],
+      ["Plan start", plan.startDate],
+      ["Plan expiry", plan.expiryDate],
+      ["Fee status", plan.feeStatus],
+      ["Account", plan.expired ? "Expired" : "Active"],
+    ];
+
     return (
       `<form class="admin-form settings-form" data-form="settings" novalidate>` +
       `<p class="form-error" data-form-error role="alert" hidden></p>` +
       `<section class="panel">` +
-      `<div class="panel-head"><div><h2 class="panel-title">Restaurant identity</h2><p class="panel-sub">Shown in the admin and at the top of the customer menu.</p></div></div>` +
-      `<div class="settings-block">` +
-      `<div class="field"><label for="settings-name">Restaurant name</label>` +
-      `<input id="settings-name" name="restaurantName" type="text" maxlength="60" required value="${escapeHtml(settings.restaurantName)}" data-autofocus>` +
-      `<p class="field-hint">Use the real restaurant name before going live. “Karahi House” is a sample.</p>` +
+      `<div class="panel-head"><div><h2 class="panel-title">Restaurant identity</h2><p class="panel-sub">Locked to config.js so every copy stays consistent.</p></div></div>` +
+      `<div class="settings-facts">` +
+      identityFacts.map(([label, value]) => settingsFactHtml(label, value)).join("") +
+      `<div class="settings-fact settings-fact--logo"><span>Logo</span>${logoPreviewHtml(restaurant.logo, restaurant.name)}</div>` +
       `</div>` +
-      `<div class="logo-field">` +
-      `<span class="field-label">Restaurant logo</span>` +
-      `<div class="logo-field-row">` +
-      logoPreviewHtml(settings.logo, settings.restaurantName) +
-      `<div class="inline-actions">` +
-      `<label class="btn btn-secondary btn-sm">${icon("upload")}Upload logo<input type="file" accept="image/png,image/jpeg,image/webp" data-logo-input hidden></label>` +
-      `<button class="btn btn-ghost btn-sm" type="button" data-action="settings-logo-remove">Remove</button>` +
-      `</div>` +
-      `</div>` +
-      `<p class="field-hint">PNG, JPG or WebP. The logo is resized to 256 px before saving.</p>` +
-      `</div>` +
-      `</div>` +
+      `<p class="field-hint">To change the name, logo, phone, WhatsApp or address, edit config.js at the project root and reload.</p>` +
       `</section>` +
       `<section class="panel">` +
-      `<div class="panel-head"><div><h2 class="panel-title">Service details</h2><p class="panel-sub">Guest-facing timings and contact details.</p></div></div>` +
-      `<div class="form-grid form-grid--2">` +
-      `<div class="field"><label for="settings-whatsapp">WhatsApp number</label>` +
-      `<input id="settings-whatsapp" name="whatsappNumber" type="text" maxlength="40" value="${escapeHtml(settings.whatsappNumber)}" placeholder="[RESTAURANT_WHATSAPP_NUMBER]">` +
-      `<p class="field-hint">Placeholder only. Replace it when the restaurant's real WhatsApp number is confirmed.</p>` +
+      `<div class="panel-head"><div><h2 class="panel-title">Plan &amp; monthly fee</h2><p class="panel-sub">Manual payments only — JazzCash, Easypaisa, bank transfer or cash.</p></div></div>` +
+      `<div class="settings-facts">` +
+      planFacts.map(([label, value]) => settingsFactHtml(label, value)).join("") +
       `</div>` +
+      `<p class="field-hint">After receiving payment, update plan expiry and fee status in config.js. If the expiry date passes while the fee is unpaid, the customer menu and admin login both show “Plan expired. Contact support.”</p>` +
+      `</section>` +
+      `<section class="panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Service details</h2><p class="panel-sub">Shown in the customer menu footer.</p></div></div>` +
+      `<div class="form-grid form-grid--2">` +
       `<div class="field"><label for="settings-hours">Opening timing</label>` +
-      `<input id="settings-hours" name="openingTiming" type="text" maxlength="60" value="${escapeHtml(settings.openingTiming)}" placeholder="12:00 pm – 11:00 pm">` +
+      `<input id="settings-hours" name="openingTiming" type="text" maxlength="60" value="${escapeHtml(settings.openingTiming)}" placeholder="12:00 pm – 11:00 pm" data-autofocus>` +
       `<p class="field-hint">Shown as “Open …” in the customer menu footer.</p>` +
       `</div>` +
       `</div>` +
       `<div class="readonly-note">` +
       `<span class="readonly-note-icon">${icon("cash")}</span>` +
       `<div><strong>${escapeHtml(settings.paymentNote || "Pay cash at table")}</strong>` +
-      `<p>Cash is the only payment method in Phase 1. Card, wallet and bank payments are not part of this build.</p></div>` +
+      `<p>Cash is collected at the restaurant. No online payment gateway is connected.</p></div>` +
       `</div>` +
       `</section>` +
       `<div class="settings-save">` +
-      `<button class="btn btn-primary" type="submit">${icon("check")}Save settings</button>` +
-      `<p class="field-hint">Changes save in this browser and appear on the customer menu right away.</p>` +
+      `<button class="btn btn-primary" type="submit">${icon("check")}Save service details</button>` +
+      `<p class="field-hint">Only opening timing is stored on this device. Restaurant identity and plan stay in config.js.</p>` +
       `</div>` +
       `</form>` +
       `<section class="panel settings-staff-panel">` +
@@ -7602,13 +7741,91 @@
       `<div><h2 class="panel-title">Staff &amp; access</h2><p class="panel-sub">Manage who can sign in and which pages each role opens.</p></div>` +
       `<a class="btn btn-secondary btn-sm" href="staff.html">${icon("users")}Manage staff</a>` +
       `</div>` +
-      `<p class="settings-staff-note">Owner manages staff logins. Manager, Kitchen and Waiter accounts use placeholder passwords in this phase.</p>` +
-      `</section>` +
-      `<section class="panel note-panel">` +
-      `<span class="note-icon">${icon("alert")}</span>` +
-      `<div><h2 class="panel-title">Before going live</h2>` +
-      `<p>Replace the sample restaurant name, dish photos and prices. This Phase 2 build is local-only: orders and settings live in this browser and do not sync between devices. A backend is needed later for real multi-device ordering.</p></div>` +
+      `<p class="settings-staff-note">The Owner login comes from config.js. Add Manager, Kitchen and Waiter accounts here as needed.</p>` +
       `</section>`
+    );
+  }
+
+  function superSettingsFormHtml(settings) {
+    const restaurant = Tenant.getRestaurant();
+    const themeColors = (CONFIG.theme && CONFIG.theme.colors) || {};
+    const uploadedLogo = String(restaurant.logo || "").startsWith("data:");
+    const logoValue = uploadedLogo ? "" : restaurant.logo;
+
+    return (
+      `<form class="admin-form settings-form" data-form="settings" data-form-mode="super" novalidate>` +
+      `<p class="form-error" data-form-error role="alert" hidden></p>` +
+      `<section class="panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Restaurant details</h2><p class="panel-sub">Super Admin only. Defaults live in config.js; changes here are saved in this browser and override them.</p></div></div>` +
+      `<div class="form-grid form-grid--2">` +
+      `<div class="field"><label for="super-restaurant-name">Restaurant name</label>` +
+      `<input id="super-restaurant-name" name="restaurantName" type="text" maxlength="80" required value="${escapeHtml(restaurant.name)}" data-autofocus>` +
+      `</div>` +
+      `<div class="field"><label for="super-owner-name">Owner name</label>` +
+      `<input id="super-owner-name" name="ownerName" type="text" maxlength="80" value="${escapeHtml(restaurant.ownerName)}">` +
+      `</div>` +
+      `<div class="field"><label for="super-phone">Phone</label>` +
+      `<input id="super-phone" name="phone" type="text" maxlength="30" value="${escapeHtml(restaurant.phone)}">` +
+      `</div>` +
+      `<div class="field"><label for="super-whatsapp">WhatsApp number</label>` +
+      `<input id="super-whatsapp" name="whatsappNumber" type="text" maxlength="30" value="${escapeHtml(restaurant.whatsapp)}">` +
+      `</div>` +
+      `<div class="field"><label for="super-city">City</label>` +
+      `<input id="super-city" name="city" type="text" maxlength="60" value="${escapeHtml(restaurant.city)}">` +
+      `</div>` +
+      `<div class="field"><label for="super-address">Address</label>` +
+      `<input id="super-address" name="address" type="text" maxlength="160" value="${escapeHtml(restaurant.address)}">` +
+      `</div>` +
+      `<div class="field"><label for="super-tables">Number of tables</label>` +
+      `<input id="super-tables" name="tableCount" type="number" min="1" max="999" step="1" value="${escapeHtml(String(restaurant.tableCount))}">` +
+      `<p class="field-hint">New table numbers are added; tables outside the new count are removed from the QR list.</p>` +
+      `</div>` +
+      `<div class="field"><label for="super-hours">Opening timing</label>` +
+      `<input id="super-hours" name="openingTiming" type="text" maxlength="60" value="${escapeHtml(settings.openingTiming)}" placeholder="12:00 pm – 11:00 pm">` +
+      `</div>` +
+      `<div class="field"><label for="super-payment-note">Payment note</label>` +
+      `<input id="super-payment-note" name="paymentNote" type="text" maxlength="80" value="${escapeHtml(settings.paymentNote)}" placeholder="Pay cash at table">` +
+      `</div>` +
+      `</div>` +
+      `<div class="super-logo-row">` +
+      logoPreviewHtml(restaurant.logo, restaurant.name) +
+      `<div class="super-logo-fields">` +
+      `<div class="field"><label for="super-logo-path">Logo path or URL</label>` +
+      `<input id="super-logo-path" name="logoPath" type="text" maxlength="500" value="${escapeHtml(logoValue)}" placeholder="assets/logo.svg" data-super-logo-path>` +
+      `<p class="field-hint">${uploadedLogo ? "An uploaded logo is active. Choose a file to replace it, or enter a new path." : "Use a file inside this project, for example assets/logo.svg."}</p>` +
+      `</div>` +
+      `<div class="field"><label for="super-logo-file">Upload a new logo</label>` +
+      `<input id="super-logo-file" type="file" accept="image/*" data-super-logo-file>` +
+      `<p class="field-hint">PNG, JPG or WebP. Resized to 256 px and saved in this browser.</p>` +
+      `</div>` +
+      `</div>` +
+      `</div>` +
+      `</section>` +
+      `<section class="panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Theme &amp; customer messages</h2><p class="panel-sub">Applied to the customer menu and landing page after saving.</p></div></div>` +
+      `<div class="form-grid form-grid--2">` +
+      `<div class="field"><label for="super-theme-primary">Primary colour</label>` +
+      `<input id="super-theme-primary" name="themePrimary" type="color" value="${escapeHtml(themeColors.primary || "#0F2E1F")}">` +
+      `</div>` +
+      `<div class="field"><label for="super-theme-accent">Accent colour</label>` +
+      `<input id="super-theme-accent" name="themeAccent" type="color" value="${escapeHtml(themeColors.accent || "#E67E22")}">` +
+      `</div>` +
+      `<div class="field"><label for="super-copy-unavailable">Menu unavailable message</label>` +
+      `<input id="super-copy-unavailable" name="menuUnavailableText" type="text" maxlength="160" value="${escapeHtml(copyStrings.menuUnavailableText || "")}">` +
+      `</div>` +
+      `<div class="field"><label for="super-copy-feedback-title">Feedback heading</label>` +
+      `<input id="super-copy-feedback-title" name="feedbackTitle" type="text" maxlength="80" value="${escapeHtml(copyStrings.feedbackTitle || "")}">` +
+      `</div>` +
+      `</div>` +
+      `<div class="field"><label for="super-copy-feedback-thanks">Feedback thank-you message</label>` +
+      `<input id="super-copy-feedback-thanks" name="feedbackThanksText" type="text" maxlength="180" value="${escapeHtml(copyStrings.feedbackThanksText || "")}">` +
+      `</div>` +
+      `</section>` +
+      `<div class="settings-save">` +
+      `<button class="btn btn-primary" type="submit">${icon("check")}Save Super Admin settings</button>` +
+      `<p class="field-hint">Saved in this browser's localStorage and applied after the page reloads.</p>` +
+      `</div>` +
+      `</form>`
     );
   }
 
@@ -7616,90 +7833,429 @@
     state.settingsLogoDraft = null;
     const settings = getSettings();
 
+    if (isSuperAdmin()) {
+      view.innerHTML =
+        pageHeaderHtml({
+          title: "Settings",
+          subtitle: "Super Admin settings: restaurant identity, theme and customer messages.",
+          actions:
+            `<a class="btn btn-secondary" href="super.html">${icon("shield")}Plan &amp; login</a>` +
+            `<a class="btn btn-secondary" href="${escapeHtml(customerMenuHref())}" target="_blank" rel="noopener">${icon("external")}View customer menu</a>`,
+        }) +
+        superSettingsFormHtml(settings);
+      return;
+    }
+
     view.innerHTML =
       pageHeaderHtml({
         title: "Settings",
-        subtitle: "Everything here is stored on this device and used by the customer menu.",
+        subtitle: "Restaurant identity and plan come from config.js. Opening timing is stored on this device.",
         actions: `<a class="btn btn-secondary" href="${escapeHtml(customerMenuHref())}" target="_blank" rel="noopener">${icon("external")}View customer menu</a>`,
       }) +
       settingsFormHtml(settings);
   }
 
-  function handleLogoSelection(input) {
+  function syncTableRecords(count) {
+    const stored = readJson(KEYS.tables);
+    if (!Array.isArray(stored) || !stored.length) return;
+
+    const byNumber = new Map(
+      stored
+        .map((table) => ({
+          number: Number(table && table.number),
+          name: String((table && table.name) || "").trim(),
+        }))
+        .filter((table) => Number.isInteger(table.number) && table.number > 0)
+        .map((table) => [table.number, table])
+    );
+
+    const next = Array.from({ length: count }, (_, index) => {
+      const number = index + 1;
+      const existing = byNumber.get(number);
+      return {
+        number,
+        name: (existing && existing.name) || `Table ${number}`,
+      };
+    });
+
+    writeJson(KEYS.tables, next);
+  }
+
+  function updateSuperLogoPreview(source) {
+    const holder = document.querySelector("[data-logo-preview]");
+    if (!holder) return;
+    const value = String(source || "").trim();
+    holder.classList.toggle("logo-preview--empty", !value);
+    holder.innerHTML = value
+      ? `<img src="${escapeHtml(resolveImageSource(value))}" alt="Restaurant logo">`
+      : `${icon("image")}<span class="logo-preview-initial">${escapeHtml(initialFor(Tenant.getRestaurant().name))}</span>`;
+  }
+
+  async function handleSuperLogoFile(input) {
     const file = input.files && input.files[0];
     if (!file) return;
 
-    input.disabled = true;
-
-    compressImage(file, { maxDimension: 256, mime: "image/png" })
-      .then((dataUrl) => {
-        state.settingsLogoDraft = dataUrl;
-        updateSettingsLogoPreview(document);
-        showToast("Logo ready. Save settings to apply.", "success");
-      })
-      .catch((error) => showToast(errorMessage(error), "error"))
-      .finally(() => {
-        input.disabled = false;
-        input.value = "";
+    try {
+      const logo = await compressImage(file, {
+        maxDimension: 256,
+        mime: "image/png",
+        quality: 0.9,
       });
+      state.settingsLogoDraft = logo;
+      updateSuperLogoPreview(logo);
+      showToast("New logo ready. Save Super Admin settings to apply it.");
+    } catch (error) {
+      input.value = "";
+      showToast(errorMessage(error), "error");
+    }
   }
 
-  function removeSettingsLogo() {
-    const settings = getSettings();
-    const currentLogo = state.settingsLogoDraft === null ? settings.logo : state.settingsLogoDraft;
-    if (!currentLogo) return;
-
-    state.settingsLogoDraft = "";
-    updateSettingsLogoPreview(document);
-    showToast("Logo removed. Save settings to apply.", "warning");
-  }
-
-  function saveSettingsForm(form) {
+  function saveSuperSettingsForm(form) {
     clearFormError(form);
+    const setError = (message) => {
+      showFormError(form, message);
+      showToast(message, "error");
+    };
 
-    const current = getSettings();
-    const restaurantName = String(form.elements.restaurantName.value || "").trim();
+    const name = String(form.elements.restaurantName.value || "").trim();
+    const ownerName = String(form.elements.ownerName.value || "").trim();
+    const phone = String(form.elements.phone.value || "").trim();
     const whatsappNumber = String(form.elements.whatsappNumber.value || "").trim();
+    const city = String(form.elements.city.value || "").trim();
+    const address = String(form.elements.address.value || "").trim();
+    const tableCount = Number(form.elements.tableCount.value);
     const openingTiming = String(form.elements.openingTiming.value || "").trim();
+    const paymentNote = String(form.elements.paymentNote.value || "").trim();
+    const logoPath = String(form.elements.logoPath.value || "").trim();
+    const primary = String(form.elements.themePrimary.value || "").trim();
+    const accent = String(form.elements.themeAccent.value || "").trim();
+    const menuUnavailableText = String(form.elements.menuUnavailableText.value || "").trim();
+    const feedbackTitle = String(form.elements.feedbackTitle.value || "").trim();
+    const feedbackThanksText = String(form.elements.feedbackThanksText.value || "").trim();
+    const currentRestaurant = Tenant.getRestaurant();
 
-    if (!restaurantName) {
-      showFormError(form, "Enter the restaurant name.");
-      form.elements.restaurantName.focus();
+    if (!name) return setError("Enter the restaurant name.");
+    if (!Number.isInteger(tableCount) || tableCount < 1 || tableCount > 999) {
+      return setError("Tables must be a whole number from 1 to 999.");
+    }
+    if (!paymentNote) return setError("Enter the payment note shown to customers.");
+    if (!/^#[0-9a-f]{6}$/i.test(primary) || !/^#[0-9a-f]{6}$/i.test(accent)) {
+      return setError("Choose valid primary and accent colours.");
+    }
+    if (!menuUnavailableText) return setError("Enter the menu unavailable message.");
+    if (!feedbackTitle) return setError("Enter the feedback heading.");
+    if (!feedbackThanksText) return setError("Enter the feedback thank-you message.");
+
+    const logo = state.settingsLogoDraft || (
+      !logoPath && String(currentRestaurant.logo || "").startsWith("data:")
+        ? currentRestaurant.logo
+        : logoPath
+    );
+
+    try {
+      Tenant.saveControl({
+        restaurant: {
+          name,
+          ownerName,
+          phone,
+          whatsappNumber,
+          city,
+          address,
+          tableCount,
+          openingTiming,
+          paymentNote,
+          logo,
+        },
+        theme: { colors: { primary, accent } },
+        copy: {
+          menuUnavailableText,
+          feedbackTitle,
+          feedbackThanksText,
+        },
+      });
+      Tenant.saveRestaurantSettings({ openingTiming, paymentNote });
+      syncTableRecords(tableCount);
+    } catch (error) {
+      setError(errorMessage(error));
       return;
     }
 
-    const nextSettings = {
-      restaurantName,
-      logo: state.settingsLogoDraft === null ? current.logo : state.settingsLogoDraft,
-      whatsappNumber: whatsappNumber || settingsDefaults.whatsappNumber,
-      openingTiming,
-      paymentNote: current.paymentNote,
-    };
+    state.settingsLogoDraft = null;
+    showToast("Super Admin settings saved. Reloading…");
+    window.setTimeout(() => window.location.reload(), 450);
+  }
+
+  function saveSettingsForm(form) {
+    if (form.dataset.formMode === "super") {
+      saveSuperSettingsForm(form);
+      return;
+    }
+
+    clearFormError(form);
+
+    const current = getSettings();
+    const openingTiming = String(form.elements.openingTiming.value || "").trim();
 
     try {
-      saveSettings(nextSettings);
+      saveSettings({ openingTiming, paymentNote: current.paymentNote });
     } catch (error) {
       showFormError(form, errorMessage(error));
       showToast(errorMessage(error), "error");
       return;
     }
 
-    try {
-      const restaurant = Tenant.getRestaurant(tenantRestaurantId);
-      if (restaurant && (restaurant.name !== restaurantName || restaurant.logo !== nextSettings.logo)) {
-        Tenant.updateRestaurant(tenantRestaurantId, {
-          name: restaurantName,
-          logo: nextSettings.logo,
-        });
-      }
-    } catch {
-      // The menu branding is already saved; the registry can catch up later.
-    }
-
     state.settingsLogoDraft = null;
     refreshShell();
-    showToast("Settings saved. The customer menu is updated on this device.");
+    showToast("Opening timing saved. The customer menu is updated on this device.");
     renderCurrentPage({ keepScroll: true });
+  }
+
+  /* ------------------------------------------------------------------------
+     Super Admin control
+     ------------------------------------------------------------------------ */
+
+  function superStatusPill(plan) {
+    if (plan.disabled) return `<span class="super-pill super-pill--danger">Disabled</span>`;
+    if (plan.expired) return `<span class="super-pill super-pill--warning">Expired</span>`;
+    return `<span class="super-pill super-pill--success">Active</span>`;
+  }
+
+  function renderSuperPage(view) {
+    if (!isSuperAdmin()) {
+      renderAccessDenied(currentSession());
+      return;
+    }
+
+    const restaurant = Tenant.getRestaurant();
+    const plan = Tenant.planStatus();
+    const planPrices = CONFIG.planPrices || {};
+    const planOptions = ["Basic", "Standard", "Premium"]
+      .map((name) => {
+        const price = Number(planPrices[name]) || 0;
+        return `<option value="${name}"${plan.name === name ? " selected" : ""}>${name} · ${escapeHtml(formatMoney(price))}</option>`;
+      })
+      .join("");
+
+    view.innerHTML =
+      pageHeaderHtml({
+        title: "Super Admin",
+        subtitle: "Full control of this copy: plan, fee, restaurant login and data reset.",
+        actions:
+          `<a class="btn btn-secondary" href="${escapeHtml(customerMenuHref())}" target="_blank" rel="noopener">${icon("external")}View customer menu</a>`,
+      }) +
+      `<section class="panel">` +
+      `<div class="panel-head">` +
+      `<div><h2 class="panel-title">Copy status</h2><p class="panel-sub">The plan is manual. No online payment gateway is connected.</p></div>` +
+      superStatusPill(plan) +
+      `</div>` +
+      `<div class="settings-facts">` +
+      settingsFactHtml("Restaurant", restaurant.name) +
+      settingsFactHtml("Plan", plan.name) +
+      settingsFactHtml("Monthly fee", formatMoney(plan.amount)) +
+      settingsFactHtml("Fee status", plan.feeStatus) +
+      settingsFactHtml("Start date", plan.startDate) +
+      settingsFactHtml("Expiry date", plan.expiryDate) +
+      settingsFactHtml("Restaurant admin", restaurant.adminUsername) +
+      settingsFactHtml("Tables", String(restaurant.tableCount)) +
+      `</div>` +
+      `<div class="super-status-actions">` +
+      `<button class="btn ${plan.disabled ? "btn-primary" : "btn-danger"}" type="button" data-action="super-toggle-copy">${plan.disabled ? "Enable this copy" : "Disable this copy"}</button>` +
+      `<p class="field-hint">${plan.disabled ? "The menu and restaurant admin login are blocked. Super Admin access stays available." : "Disabling blocks the customer menu and restaurant admin login with “Plan expired. Contact support.”"}</p>` +
+      `</div>` +
+      `</section>` +
+      `<form class="admin-form" data-form="super-plan" novalidate>` +
+      `<section class="panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Plan &amp; monthly fee</h2><p class="panel-sub">Change the plan, start date, expiry date and payment status.</p></div></div>` +
+      `<p class="form-error" data-form-error role="alert" hidden></p>` +
+      `<div class="form-grid form-grid--2">` +
+      `<div class="field"><label for="super-plan-name">Plan</label><select id="super-plan-name" name="planName" required>${planOptions}</select></div>` +
+      `<div class="field"><label for="super-plan-fee">Fee status</label><select id="super-plan-fee" name="feeStatus" required>` +
+      `<option value="Paid"${plan.feeStatus === "Paid" ? " selected" : ""}>Paid</option>` +
+      `<option value="Unpaid"${plan.feeStatus === "Unpaid" ? " selected" : ""}>Unpaid</option>` +
+      `</select></div>` +
+      `<div class="field"><label for="super-plan-start">Start date</label><input id="super-plan-start" name="startDate" type="date" value="${escapeHtml(plan.startDate)}" required></div>` +
+      `<div class="field"><label for="super-plan-expiry">Expiry date</label><input id="super-plan-expiry" name="expiryDate" type="date" value="${escapeHtml(plan.expiryDate)}" required></div>` +
+      `</div>` +
+      `<div class="settings-save"><button class="btn btn-primary" type="submit">${icon("check")}Save plan &amp; fee</button>` +
+      `<p class="field-hint">If the expiry date has passed and the fee is Unpaid, the menu and restaurant admin login are blocked until you mark it Paid or extend the date.</p></div>` +
+      `</section>` +
+      `</form>` +
+      `<form class="admin-form" data-form="super-admin" novalidate>` +
+      `<section class="panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Restaurant Admin login</h2><p class="panel-sub">Create or change the username and password used on the normal admin login page.</p></div></div>` +
+      `<p class="form-error" data-form-error role="alert" hidden></p>` +
+      `<div class="form-grid form-grid--2">` +
+      `<div class="field"><label for="super-admin-username">Username</label><input id="super-admin-username" name="username" type="text" maxlength="30" autocomplete="off" spellcheck="false" value="${escapeHtml(restaurant.adminUsername)}" required></div>` +
+      `<div class="field"><label for="super-admin-password">New password</label><input id="super-admin-password" name="password" type="password" minlength="8" maxlength="60" autocomplete="new-password" placeholder="Leave blank to keep current"></div>` +
+      `<div class="field"><label for="super-admin-password-confirm">Confirm new password</label><input id="super-admin-password-confirm" name="passwordConfirm" type="password" minlength="8" maxlength="60" autocomplete="new-password" placeholder="Repeat the new password"></div>` +
+      `</div>` +
+      `<p class="field-hint">Minimum 8 characters. The restaurant admin cannot see this page or change this login.</p>` +
+      `<div class="settings-save"><button class="btn btn-primary" type="submit">${icon("check")}Save admin login</button></div>` +
+      `</section>` +
+      `</form>` +
+      `<section class="panel super-danger-panel">` +
+      `<div class="panel-head"><div><h2 class="panel-title">Data reset</h2><p class="panel-sub">Both actions ask for confirmation before changing anything.</p></div></div>` +
+      `<div class="super-danger-actions">` +
+      `<button class="btn btn-secondary" type="button" data-action="super-clear-orders">${icon("trash")}Clear test orders</button>` +
+      `<button class="btn btn-danger" type="button" data-action="super-reset-demo">${icon("alert")}Reset demo data</button>` +
+      `</div>` +
+      `<p class="field-hint">Clear test orders removes orders, tracked orders and table service requests. Reset demo data restores the SAMPLE menu from config.js and removes deals/offers; it keeps orders, staff and feedback.</p>` +
+      `</section>`;
+  }
+
+  function saveSuperPlanForm(form) {
+    clearFormError(form);
+    const setError = (message) => showFormError(form, message);
+
+    const planName = String(form.elements.planName.value || "").trim();
+    const feeStatus = String(form.elements.feeStatus.value || "");
+    const startDate = String(form.elements.startDate.value || "").trim();
+    const expiryDate = String(form.elements.expiryDate.value || "").trim();
+    const planPrices = CONFIG.planPrices || {};
+
+    if (!Object.prototype.hasOwnProperty.call(planPrices, planName)) {
+      return setError("Choose a valid plan.");
+    }
+    if (feeStatus !== "Paid" && feeStatus !== "Unpaid") {
+      return setError("Choose Paid or Unpaid.");
+    }
+    if (!Tenant.isDateKey(startDate) || !Tenant.isDateKey(expiryDate)) {
+      return setError("Enter valid start and expiry dates.");
+    }
+    if (startDate > expiryDate) {
+      return setError("The expiry date must be on or after the start date.");
+    }
+
+    try {
+      Tenant.saveControl({
+        plan: {
+          name: planName,
+          startDate,
+          expiryDate,
+          feeStatus,
+        },
+      });
+    } catch (error) {
+      return setError(errorMessage(error));
+    }
+
+    showToast("Plan and fee saved. Reloading…");
+    window.setTimeout(() => window.location.reload(), 450);
+  }
+
+  function saveSuperAdminForm(form) {
+    clearFormError(form);
+    const setError = (message) => showFormError(form, message);
+
+    const username = String(form.elements.username.value || "").trim();
+    const password = String(form.elements.password.value || "");
+    const passwordConfirm = String(form.elements.passwordConfirm.value || "");
+    const current = Tenant.getRestaurant();
+    const superCredentials = Tenant.getSuperAdmin();
+
+    if (username.length < 3) return setError("Use at least 3 characters for the admin username.");
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      return setError("Use letters, numbers, dots, dashes or underscores for the username.");
+    }
+    if (username.toLowerCase() === String(superCredentials.username || "").toLowerCase()) {
+      return setError("Choose a username different from the Super Admin username.");
+    }
+    if (password && password.length < 8) {
+      return setError("The new admin password must be at least 8 characters.");
+    }
+    if (password !== passwordConfirm) {
+      return setError("The new password and confirmation do not match.");
+    }
+
+    const collision = getStaff().find(
+      (member) =>
+        member.role !== "Owner" && member.username.toLowerCase() === username.toLowerCase()
+    );
+    if (collision) {
+      return setError("That username is already used by another staff member.");
+    }
+
+    try {
+      Tenant.saveControl({
+        admin: {
+          username,
+          password: password || current.adminPassword,
+        },
+      });
+    } catch (error) {
+      return setError(errorMessage(error));
+    }
+
+    showToast("Restaurant Admin login updated. Reloading…");
+    window.setTimeout(() => window.location.reload(), 450);
+  }
+
+  function toggleSuperCopy() {
+    const plan = Tenant.planStatus();
+    const disabling = !plan.disabled;
+
+    confirmDialog({
+      title: disabling ? "Disable this copy?" : "Enable this copy?",
+      message: disabling
+        ? "The customer menu and restaurant admin login will show “Plan expired. Contact support.” Super Admin access stays available."
+        : "The customer menu and restaurant admin login will open again.",
+      confirmLabel: disabling ? "Disable copy" : "Enable copy",
+      tone: disabling ? "danger" : "primary",
+      onConfirm() {
+        try {
+          Tenant.saveControl({ disabled: disabling });
+        } catch (error) {
+          showToast(errorMessage(error), "error");
+          return false;
+        }
+        showToast(disabling ? "Copy disabled." : "Copy enabled. Reloading…");
+        window.setTimeout(() => window.location.reload(), 450);
+        return true;
+      },
+    });
+  }
+
+  function clearTestOrders() {
+    confirmDialog({
+      title: "Clear test orders?",
+      message:
+        "All orders, tracked order numbers and table service requests in this browser will be removed. Menu, deals and staff stay unchanged.",
+      confirmLabel: "Clear orders",
+      tone: "danger",
+      onConfirm() {
+        ["orders", "sequence", "waiterCalls", "billRequests", "myOrders"].forEach((key) => {
+          if (KEYS[key]) window.localStorage.removeItem(KEYS[key]);
+        });
+        showToast("Test orders cleared.");
+        refreshShell();
+        renderCurrentPage({ keepScroll: true });
+        return true;
+      },
+    });
+  }
+
+  function resetDemoData() {
+    confirmDialog({
+      title: "Reset demo data?",
+      message:
+        "The SAMPLE menu from config.js will be restored and all deals and offers will be removed. Orders, staff and feedback are kept.",
+      confirmLabel: "Reset demo data",
+      tone: "danger",
+      onConfirm() {
+        try {
+          writeJson(KEYS.menu, defaultMenuItems());
+          window.localStorage.removeItem(KEYS.offers);
+          window.localStorage.removeItem(KEYS.deals);
+        } catch (error) {
+          showToast(errorMessage(error), "error");
+          return false;
+        }
+        showToast("Demo menu restored. Deals and offers cleared.");
+        refreshShell();
+        renderCurrentPage({ keepScroll: true });
+        return true;
+      },
+    });
   }
 
   /* ------------------------------------------------------------------------
@@ -7707,27 +8263,42 @@
      ------------------------------------------------------------------------ */
 
   function initLogin() {
+    const isSuperLogin = page === "super-login";
     let initialError = "";
-    const activeSession = getActiveSession();
+    const activeSession = isSuperLogin ? getSuperAdminSession() : getActiveSession();
 
     if (activeSession) {
+      if (isSuperLogin || activeSession.role === SUPER_ROLE) {
+        window.location.replace("index.html");
+        return;
+      }
+
       const restaurant = Tenant.getRestaurant(activeSession.restaurantId);
       if (!restaurant) {
         setSession(null);
-      } else if (restaurant.status === "Expired") {
+      } else if (restaurant.status === "Expired" || restaurant.status === "Disabled") {
         setSession(null);
-        initialError = "Your plan has expired. Please contact support to renew.";
-      } else if (restaurant.status === "Disabled") {
-        setSession(null);
-        initialError = "This restaurant is disabled. Please contact support.";
+        initialError = "Plan expired. Contact support.";
       } else {
         window.location.replace(roleHome(activeSession.role));
         return;
       }
     }
 
+    const loginRestaurant = Tenant.getRestaurant();
+    if (
+      !isSuperLogin &&
+      !initialError &&
+      loginRestaurant &&
+      (loginRestaurant.status === "Expired" || loginRestaurant.status === "Disabled")
+    ) {
+      initialError = "Plan expired. Contact support.";
+    }
+
     const settings = getSettings();
-    document.title = `Sign in | ${settings.restaurantName} Admin`;
+    document.title = isSuperLogin
+      ? `Super Admin sign in | ${settings.restaurantName}`
+      : `Sign in | ${settings.restaurantName} Admin`;
 
     document.querySelectorAll("[data-login-name]").forEach((element) => {
       element.textContent = settings.restaurantName;
@@ -7736,7 +8307,7 @@
     document.querySelectorAll("[data-login-logo]").forEach((logoHolder) => {
       logoHolder.setAttribute("data-initial", initialFor(settings.restaurantName));
       logoHolder.innerHTML = settings.logo
-        ? `<img src="${escapeHtml(settings.logo)}" alt="">`
+        ? `<img src="${escapeHtml(resolveImageSource(settings.logo))}" alt="">`
         : `${icon("qr")}<span class="brand-dot" aria-hidden="true"></span>`;
     });
 
@@ -7777,7 +8348,9 @@
         return;
       }
 
-      const result = authenticateLogin(username, password);
+      const result = isSuperLogin
+        ? authenticateSuperLogin(username, password)
+        : authenticateLogin(username, password);
       if (!result.ok) {
         showError(result.message || "Wrong username or password");
         passwordInput.value = "";
@@ -7785,7 +8358,8 @@
         return;
       }
 
-      setSession(result.member);
+      if (isSuperLogin) setSuperAdminSession(result.member);
+      else setSession(result.member);
       if (submitButton) {
         submitButton.disabled = true;
         submitButton.textContent = "Signing in…";
@@ -7833,21 +8407,15 @@
       return;
     }
 
-    if (restaurant.status === "Expired") {
+    if (session.role !== SUPER_ROLE && restaurant.status === "Expired") {
       setSession(null);
-      renderRestaurantBlocked(
-        "Your plan has expired. Please contact support to renew.",
-        "Plan expired"
-      );
+      renderRestaurantBlocked("Plan expired. Contact support.", "Plan expired");
       return;
     }
 
-    if (restaurant.status === "Disabled") {
+    if (session.role !== SUPER_ROLE && restaurant.status === "Disabled") {
       setSession(null);
-      renderRestaurantBlocked(
-        "This restaurant is disabled. Please contact support.",
-        "Restaurant disabled"
-      );
+      renderRestaurantBlocked("Plan expired. Contact support.", "Plan expired");
       return;
     }
 
@@ -7869,7 +8437,7 @@
     if (orderNumber && findOrder(orderNumber)) openOrderModal(orderNumber);
   }
 
-  if (page === "login") {
+  if (page === "login" || page === "super-login") {
     initLogin();
   } else {
     initAdmin();

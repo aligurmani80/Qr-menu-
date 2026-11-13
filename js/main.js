@@ -2,7 +2,7 @@
    KARAHI HOUSE — PHASE 3B CUSTOMER MENU
    Menu, cart, order modes, waiter calls, bill requests and live tracking.
    The interface is English-only. All data stays in localStorage.
-   Restaurant content and copy come from js/config.js.
+   Restaurant content and copy come from config.js at the project root.
    ========================================================================== */
 
 (() => {
@@ -115,6 +115,10 @@
   const successTable = document.getElementById("success-table");
   const successTotal = document.getElementById("success-total");
   const successTime = document.getElementById("success-time");
+  const successNameRow = document.getElementById("success-name-row");
+  const successName = document.getElementById("success-name");
+  const successMobileRow = document.getElementById("success-mobile-row");
+  const successMobile = document.getElementById("success-mobile");
   const successBack = document.getElementById("success-back");
   const successStamp = successScreen.querySelector(".status-stamp");
   const successSteps = document.getElementById("success-steps");
@@ -136,17 +140,7 @@
      Restaurant tenancy
      ------------------------------------------------------------------------ */
 
-  function readRequestedRestaurantId() {
-    try {
-      const value = new URLSearchParams(window.location.search).get("restaurant");
-      if (value != null && value.trim()) return value.trim();
-    } catch {
-      // Invalid query string; fall back to the default restaurant.
-    }
-    return Tenant.DEFAULT_RESTAURANT_ID;
-  }
-
-  function renderUnavailableMenu(record) {
+  function renderPlanExpired(record) {
     const name =
       String((record && record.name) || (CONFIG.restaurant && CONFIG.restaurant.name) || "Restaurant").trim() ||
       "Restaurant";
@@ -158,33 +152,24 @@
         .slice(0, 2)
         .toUpperCase() || "R";
 
-    document.title = `Menu unavailable | ${name}`;
+    document.title = `Plan expired | ${name}`;
     document.body.className = "menu-blocked-page";
     document.body.innerHTML =
       '<main class="blocked-menu">' +
         '<div class="blocked-card">' +
           `<span class="blocked-mark" aria-hidden="true">${escapeHtml(initials)}</span>` +
           `<p class="blocked-kicker">${escapeHtml(name)}</p>` +
-          '<h1 class="blocked-title">Menu unavailable</h1>' +
-          '<p class="blocked-text">This menu is currently unavailable. Please contact the restaurant.</p>' +
+          '<h1 class="blocked-title">Plan expired</h1>' +
+          '<p class="blocked-text">Plan expired. Contact support.</p>' +
         '</div>' +
       '</main>';
   }
 
-  const requestedRestaurantId = readRequestedRestaurantId();
+  const tenantRestaurant = Tenant.getRestaurant();
+  const plan = Tenant.planStatus();
 
-  if (
-    window.DemoData &&
-    typeof window.DemoData.ensure === "function" &&
-    window.DemoData.isDemo(requestedRestaurantId)
-  ) {
-    window.DemoData.ensure();
-  }
-
-  const tenantRestaurant = Tenant.getRestaurant(requestedRestaurantId);
-
-  if (!tenantRestaurant || tenantRestaurant.status !== "Active") {
-    renderUnavailableMenu(tenantRestaurant);
+  if (plan.expired || plan.disabled) {
+    renderPlanExpired(tenantRestaurant);
     return;
   }
 
@@ -222,8 +207,10 @@
   const defaultMenuItems = Array.isArray(CONFIG.menu) ? CONFIG.menu : [];
   const defaultSettings = {
     restaurantName: defaultRestaurantName,
-    logo: String(tenantRestaurant.logo || (CONFIG.settings && CONFIG.settings.logo) || ""),
-    openingTiming: String((CONFIG.settings && CONFIG.settings.openingTiming) || "").trim(),
+    logo: String(tenantRestaurant.logo || ""),
+    openingTiming: String(
+      (CONFIG.restaurant && CONFIG.restaurant.openingTiming) || ""
+    ).trim(),
     paymentNote: String(paymentConfig.note || "Pay cash at table"),
   };
   const deliveryCharge = Math.max(0, Number(deliveryConfig.charge) || 0);
@@ -291,8 +278,10 @@
     offerDateFormatter = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
   }
 
+  const initialTable = resolveTableNumber();
+
   const state = {
-    table: resolveTableNumber(),
+    table: initialTable,
     query: "",
     categoryId: ALL_CATEGORY.id,
     cart: new Map(),
@@ -300,7 +289,7 @@
     modalTrigger: null,
     successOpen: false,
     placingOrder: false,
-    mode: DINE_IN,
+    mode: initialTable ? DINE_IN : TAKEAWAY,
     customer: { name: "", mobile: "", address: "" },
     trackingOrderNumber: null,
     billViewMode: null,
@@ -321,7 +310,6 @@
   }
 
   function resolveTableNumber() {
-    const defaultNumber = toPositiveInteger(CONFIG.table && CONFIG.table.defaultNumber, 5);
     const queryParam = (CONFIG.table && CONFIG.table.queryParam) || "table";
     let queryValue = null;
 
@@ -339,7 +327,15 @@
       }
     }
 
-    return Math.min(defaultNumber, 999);
+    return null;
+  }
+
+  function hasTable() {
+    return Number.isInteger(Number(state.table)) && Number(state.table) > 0;
+  }
+
+  function isDineIn() {
+    return state.mode === DINE_IN && hasTable();
   }
 
   function copy(key, vars) {
@@ -416,7 +412,8 @@
   }
 
   function formatTableLabel(tableNumber = state.table) {
-    return `Table ${tableNumber}`;
+    const parsed = Number(tableNumber);
+    return Number.isInteger(parsed) && parsed > 0 ? `Table ${parsed}` : "Table";
   }
 
   function categoryLabel(category) {
@@ -435,7 +432,7 @@
 
   function modeNoteText() {
     if (state.mode === DINE_IN) {
-      return copy("modeDineNote", { table: state.table });
+      return hasTable() ? copy("modeDineNote", { table: state.table }) : copy("modeDineUnavailable");
     }
     if (state.mode === TAKEAWAY) {
       return copy("modeTakeawayNote");
@@ -603,7 +600,7 @@
           category,
           image: typeof item.image === "string" ? item.image.trim() : "",
           popular: Boolean(item.popular),
-          signature: Boolean(item.signature),
+          signature: Boolean(item.signature || item.isSignature),
           sample: Boolean(item.sample),
           active: item.active !== false,
         };
@@ -691,25 +688,19 @@
 
   function loadSettings() {
     const stored = readStoredJson(settingsStorageKey);
-    const merged = { ...defaultSettings };
 
     if (stored && typeof stored === "object" && !Array.isArray(stored)) {
-      if (typeof stored.restaurantName === "string" && stored.restaurantName.trim()) {
-        merged.restaurantName = stored.restaurantName.trim();
-      }
-      if (typeof stored.logo === "string") {
-        merged.logo = stored.logo;
-      }
       if (typeof stored.openingTiming === "string") {
-        merged.openingTiming = stored.openingTiming.trim();
+        settings.openingTiming = stored.openingTiming.trim();
       }
       if (typeof stored.paymentNote === "string" && stored.paymentNote.trim()) {
-        merged.paymentNote = stored.paymentNote.trim();
+        settings.paymentNote = stored.paymentNote.trim();
       }
     }
 
-    settings = merged;
-    restaurantName = merged.restaurantName;
+    restaurantName = defaultRestaurantName;
+    settings.restaurantName = defaultRestaurantName;
+    settings.logo = defaultSettings.logo;
   }
 
   function loadOffers() {
@@ -1002,8 +993,8 @@
     });
 
     const themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta && themeColors.primary) {
-      themeMeta.setAttribute("content", themeColors.primary);
+    if (themeMeta) {
+      themeMeta.setAttribute("content", themeColors.primary || "#0F2E1F");
     }
   }
 
@@ -1019,7 +1010,10 @@
   }
 
   function updateModeButtons() {
+    modeOptions.classList.toggle("is-two", !hasTable());
     modeOptions.querySelectorAll("[data-mode]").forEach((button) => {
+      const isDineButton = button.dataset.mode === DINE_IN;
+      button.hidden = isDineButton && !hasTable();
       const active = button.dataset.mode === state.mode;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
@@ -1027,10 +1021,12 @@
   }
 
   function applyChrome() {
-    const dineIn = state.mode === DINE_IN;
+    const dineIn = isDineIn();
     const tableLabel = formatTableLabel();
 
-    document.title = `${restaurantName} | ${copy("menu")} - ${tableLabel}`;
+    document.title = dineIn
+      ? `${restaurantName} | ${copy("menu")} - ${tableLabel}`
+      : `${restaurantName} | ${copy("menu")}`;
     const descriptionMeta = document.querySelector('meta[name="description"]');
     if (descriptionMeta) {
       descriptionMeta.setAttribute(
@@ -1326,6 +1322,9 @@
     } else if (category && category.id === "trending") {
       title = copy("noTrending");
       message = copy("noTrendingHint");
+    } else if (category && category.id === "signature") {
+      title = copy("noSignature");
+      message = copy("noSignatureHint");
     } else if (category && category.id === "deals") {
       title = copy("noCategoryItems");
       message = copy("noDeals");
@@ -1460,10 +1459,13 @@
   }
 
   function checkoutDetailsHtml() {
-    if (state.mode === DINE_IN) return "";
-
     const isDelivery = state.mode === DELIVERY;
-    const note = isDelivery ? copy("detailsForDelivery") : copy("detailsForTakeaway");
+    const note =
+      state.mode === DINE_IN
+        ? copy("detailsForDineIn")
+        : isDelivery
+          ? copy("detailsForDelivery")
+          : copy("detailsForTakeaway");
 
     return (
       `<div class="checkout-details">` +
@@ -1616,15 +1618,33 @@
     }
   }
 
-  function validateCheckout() {
-    if (state.mode === DINE_IN) return true;
+  function normalizeMobile(value) {
+    return String(value || "").replace(/[\s-]/g, "");
+  }
 
+  function isValidMobile(value) {
+    return /^03\d{9}$/.test(normalizeMobile(value));
+  }
+
+  function validateCheckout() {
     const name = state.customer.name.trim();
     const mobile = state.customer.mobile.trim();
 
-    if (!name || !mobile) {
-      showToast(copy("detailsRequired"));
-      focusCheckoutField(!name ? "name" : "mobile");
+    if (!name) {
+      showToast(copy("nameRequired"));
+      focusCheckoutField("name");
+      return false;
+    }
+
+    if (!mobile) {
+      if (state.mode !== DINE_IN) {
+        showToast(copy("mobileRequired"));
+        focusCheckoutField("mobile");
+        return false;
+      }
+    } else if (!isValidMobile(mobile)) {
+      showToast(copy("mobileInvalid"));
+      focusCheckoutField("mobile");
       return false;
     }
 
@@ -1929,8 +1949,8 @@
       restaurantName: settings.restaurantName || restaurantName,
       mode,
       tableNumber,
-      customerName: mode === DINE_IN ? "" : state.customer.name.trim(),
-      customerMobile: mode === DINE_IN ? "" : state.customer.mobile.trim(),
+      customerName: state.customer.name.trim(),
+      customerMobile: normalizeMobile(state.customer.mobile),
       deliveryAddress: mode === DELIVERY ? state.customer.address.trim() : "",
       items: entries.map((entry) => {
         const { item, quantity, lineTotal } = entry;
@@ -2044,6 +2064,17 @@
     successTableLabel.textContent = mode === DINE_IN ? "Table" : "Order mode";
     successTable.textContent =
       mode === DINE_IN ? String(order.tableNumber || state.table) : modeLabel(mode);
+
+    const customerName = String(order.customerName || "").trim();
+    const customerMobile = String(order.customerMobile || "").trim();
+    if (successNameRow && successName) {
+      successNameRow.hidden = !customerName;
+      successName.textContent = customerName || "—";
+    }
+    if (successMobileRow && successMobile) {
+      successMobileRow.hidden = !customerMobile;
+      successMobile.textContent = customerMobile || "—";
+    }
 
     successSteps.setAttribute("aria-label", "Order tracking");
     successSteps.innerHTML = buildTrackingSteps(status);
@@ -2241,7 +2272,7 @@
      ------------------------------------------------------------------------ */
 
   function syncServiceState() {
-    const dineIn = state.mode === DINE_IN;
+    const dineIn = isDineIn();
     serviceRail.hidden = !dineIn || state.successOpen;
 
     if (!dineIn) return;
@@ -2611,6 +2642,11 @@
   function setMode(mode) {
     if (!ORDER_MODES.includes(mode) || mode === state.mode) return;
 
+    if (mode === DINE_IN && !hasTable()) {
+      showToast(copy("modeDineUnavailable"));
+      return;
+    }
+
     if (state.activeModal === "bill-modal") {
       closeModal("bill-modal", { restoreFocus: false });
     }
@@ -2788,7 +2824,7 @@
 
   applyTheme();
   if (window.Tenant && typeof Tenant.ensureSampleMenuItems === "function") {
-    Tenant.ensureSampleMenuItems(restaurantId);
+    Tenant.ensureSampleMenuItems();
   }
   loadSettings();
   loadMenu();

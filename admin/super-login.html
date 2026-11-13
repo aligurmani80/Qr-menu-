@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FF5A00">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Super Admin sign in for restaurant details, plan, fee and credentials.">
+  <title>Super Admin sign in</title>
+
+  <link rel="icon" href="../assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="../assets/favicon.png" sizes="64x64">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css?v=20261113g">
+
+  <script src="../config.js?v=20261113g" defer></script>
+  <script src="../js/tenant.js?v=20261113g" defer></script>
+  <script src="js/admin.js?v=20261113g" defer></script>
+  <script src="../js/pwa.js?v=20261113h" defer></script>
+</head>
+<body class="login-page login-page--super" data-page="super-login">
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-label="Super Admin control">
+      <a class="login-brand" href="../index.html">
+        <span class="brand-mark brand-mark--lg" data-login-logo data-image-fallback data-initial="S">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3 4.5 6v5.4c0 4.4 3 7.9 7.5 9.6 4.5-1.7 7.5-5.2 7.5-9.6V6L12 3Z"></path>
+            <path d="m8.8 11.8 2.2 2.2 4.2-4.4"></path>
+          </svg>
+          <span class="brand-dot" aria-hidden="true"></span>
+        </span>
+        <span class="login-brand-copy">
+          <strong data-login-name>Restaurant</strong>
+          <span>Super Admin Control</span>
+        </span>
+      </a>
+
+      <div class="login-pitch">
+        <span class="login-kicker">Copy owner access</span>
+        <h1>One login for<br>the whole <em>copy</em>.</h1>
+        <p>Restaurant details, plan and fee dates, the restaurant admin password, and a full switch to disable this copy — all from one private screen.</p>
+        <div class="login-points">
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Full admin access
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Plan, fee and expiry control
+          </span>
+          <span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
+            Restaurant admin password
+          </span>
+        </div>
+      </div>
+
+      <p class="login-brand-foot">Super Admin · Not visible to restaurant staff</p>
+    </section>
+
+    <section class="login-panel">
+      <div class="login-card">
+        <div class="login-card-brand">
+          <span class="brand-mark" data-login-logo data-image-fallback data-initial="S">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 3 4.5 6v5.4c0 4.4 3 7.9 7.5 9.6 4.5-1.7 7.5-5.2 7.5-9.6V6L12 3Z"></path>
+              <path d="m8.8 11.8 2.2 2.2 4.2-4.4"></path>
+            </svg>
+            <span class="brand-dot" aria-hidden="true"></span>
+          </span>
+          <strong data-login-name>Restaurant</strong>
+        </div>
+
+        <span class="super-login-badge">SUPER ADMIN</span>
+        <h1 class="login-title">Control sign in</h1>
+        <p class="login-sub">Use the Super Admin username and password from <code>config.js</code>.</p>
+
+        <div class="login-error" data-login-error role="alert" hidden></div>
+
+        <form class="login-form" id="login-form" novalidate>
+          <div class="field">
+            <label for="login-username">Super Admin username</label>
+            <input id="login-username" name="username" type="text" autocomplete="username" spellcheck="false" required>
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <div class="password-field">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+              <button class="icon-button password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary login-submit" type="submit">Sign in as Super Admin</button>
+        </form>
+
+        <div class="login-links">
+          <a href="../index.html">← Back to customer menu</a>
+          <a href="login.html">Restaurant admin sign in</a>
+        </div>
+
+        <p class="login-foot">Super Admin works even when the plan has expired or the copy is disabled, so support can restore it.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="admin-toast" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <div class="boot-error"><h1>JavaScript is required</h1><p>Turn on JavaScript to use the restaurant admin.</p></div>
+  </noscript>
+</body>
+</html>

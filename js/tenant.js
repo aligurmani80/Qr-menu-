@@ -1,43 +1,52 @@
 /* ==========================================================================
-   SHARED RESTAURANT TENANCY — PHASE 4
+   SINGLE-RESTAURANT DATA LAYER
 
-   The local "database" is browser localStorage. Super Admin owns the
-   restaurant registry; every restaurant's menu, orders, tables, offers,
-   staff and service requests live under that restaurant's unique ID.
+   One copy of this project serves exactly one restaurant. Default identity,
+   logins and plan/fee values come from /config.js. A Super Admin can save
+   overrides for those values in localStorage; the overrides are applied on
+   top of config.js on every page load and survive a refresh.
 
-   This file is loaded by the customer menu, the restaurant admin and the
-   Super Admin console so all three read the same registry and storage keys.
+   Operational data (menu edits, orders, tables, offers, feedback) lives in
+   localStorage on this device only.
    ========================================================================== */
 
 (() => {
   "use strict";
 
-  const config = typeof CONFIG !== "undefined" && CONFIG ? CONFIG : {};
+  const config =
+    typeof RESTAURANT_CONFIG !== "undefined"
+      ? RESTAURANT_CONFIG
+      : typeof CONFIG !== "undefined"
+        ? CONFIG
+        : {};
+
+  const restaurantConfig = config.restaurant || {};
+  const adminConfig = config.admin || {};
+  const superAdminConfig = config.superAdmin || {};
+  const planConfig = config.plan || {};
   const storageConfig = config.storage || {};
   const ordersConfig = config.orders || {};
-  const adminConfig = config.admin || {};
-  const restaurantConfig = config.restaurant || {};
-  const settingsConfig = config.settings || {};
+  const copyStrings = typeof COPY !== "undefined" && COPY && typeof COPY === "object" ? COPY : null;
 
-  const REGISTRY_KEY = "karahiHouse.restaurants.v1";
-  const MIGRATION_KEY = "karahiHouse.tenancy.migrated.v1";
-  const DEFAULT_RESTAURANT_ID = "karahi-house";
-  const BILLING_CYCLE_DAYS = 30;
+  const RESTAURANT_ID = "restaurant";
+  const PLAN_NAMES = ["Basic", "Standard", "Premium"];
+  const CONTROL_KEY = storageConfig.controlKey || "qrMenu.v2.control";
+  const SUPER_SESSION_KEY = superAdminConfig.sessionKey || "qrMenu.v2.superAdminSession";
 
   const baseKeys = Object.freeze({
-    menu: storageConfig.menuKey || "karahiHouse.menu.v1",
-    settings: storageConfig.settingsKey || "karahiHouse.settings.v1",
-    tables: storageConfig.tablesKey || "karahiHouse.tables.v1",
-    offers: storageConfig.offersKey || "karahiHouse.offers.v1",
-    deals: storageConfig.dealsKey || "karahiHouse.deals.v1",
-    cart: storageConfig.cartKey || "karahiHouse.cart.v1",
-    staff: storageConfig.staffKey || "karahiHouse.staff.v1",
-    orders: ordersConfig.storageKey || "karahiHouse.orders.v1",
-    sequence: ordersConfig.sequenceKey || "karahiHouse.orderSequence.v1",
-    waiterCalls: storageConfig.waiterCallsKey || "karahiHouse.waiterCalls.v1",
-    billRequests: storageConfig.billRequestsKey || "karahiHouse.billRequests.v1",
-    myOrders: storageConfig.myOrdersKey || "karahiHouse.myOrders.v1",
-    feedback: storageConfig.feedbackKey || "karahiHouse.feedback.v1",
+    menu: storageConfig.menuKey || "qrMenu.v2.menu",
+    settings: storageConfig.settingsKey || "qrMenu.v2.settings",
+    tables: storageConfig.tablesKey || "qrMenu.v2.tables",
+    offers: storageConfig.offersKey || "qrMenu.v2.offers",
+    deals: storageConfig.dealsKey || "qrMenu.v2.deals",
+    cart: storageConfig.cartKey || "qrMenu.v2.cart",
+    staff: storageConfig.staffKey || "qrMenu.v2.staff",
+    orders: ordersConfig.storageKey || "qrMenu.v2.orders",
+    sequence: ordersConfig.sequenceKey || "qrMenu.v2.orderSequence",
+    waiterCalls: storageConfig.waiterCallsKey || "qrMenu.v2.waiterCalls",
+    billRequests: storageConfig.billRequestsKey || "qrMenu.v2.billRequests",
+    myOrders: storageConfig.myOrdersKey || "qrMenu.v2.myOrders",
+    feedback: storageConfig.feedbackKey || "qrMenu.v2.feedback",
   });
 
   function readJson(key) {
@@ -52,6 +61,131 @@
   function writeJson(key, value) {
     window.localStorage.setItem(key, JSON.stringify(value));
     return value;
+  }
+
+  function isPlainObject(value) {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function readControl() {
+    const stored = readJson(CONTROL_KEY);
+    return isPlainObject(stored) ? stored : {};
+  }
+
+  function applyControlOverrides() {
+    const control = readControl();
+    const restaurant = isPlainObject(control.restaurant) ? control.restaurant : null;
+    if (restaurant) {
+      if (typeof restaurant.name === "string" && restaurant.name.trim()) {
+        restaurantConfig.name = restaurant.name.trim();
+      }
+      ["ownerName", "phone", "whatsappNumber", "city", "address", "openingTiming", "paymentNote"].forEach(
+        (field) => {
+          if (typeof restaurant[field] === "string") {
+            restaurantConfig[field] = restaurant[field].trim();
+          }
+        }
+      );
+      if (typeof restaurant.logo === "string") {
+        restaurantConfig.logo = restaurant.logo.trim();
+      }
+      if (restaurant.tableCount != null && Number.isFinite(Number(restaurant.tableCount))) {
+        restaurantConfig.tableCount = Math.max(1, Math.min(999, Math.round(Number(restaurant.tableCount))));
+      }
+      if (typeof restaurant.paymentNote === "string" && restaurant.paymentNote.trim()) {
+        config.payment = config.payment || {};
+        config.payment.note = restaurant.paymentNote.trim();
+      }
+    }
+
+    const admin = isPlainObject(control.admin) ? control.admin : null;
+    if (admin) {
+      adminConfig.credentials = adminConfig.credentials || {};
+      if (typeof admin.username === "string" && admin.username.trim()) {
+        adminConfig.credentials.username = admin.username.trim();
+      }
+      if (typeof admin.password === "string" && admin.password.length >= 8) {
+        adminConfig.credentials.password = admin.password;
+      }
+    }
+
+    const plan = isPlainObject(control.plan) ? control.plan : null;
+    if (plan) {
+      if (PLAN_NAMES.includes(String(plan.name || "").trim())) {
+        planConfig.name = String(plan.name).trim();
+      }
+      if (isDateKey(plan.startDate)) planConfig.startDate = String(plan.startDate);
+      if (isDateKey(plan.expiryDate)) planConfig.expiryDate = String(plan.expiryDate);
+      if (plan.feeStatus === "Paid" || plan.feeStatus === "Unpaid") {
+        planConfig.feeStatus = plan.feeStatus;
+      }
+    }
+
+    const theme = isPlainObject(control.theme) ? control.theme : null;
+    const themeColors = theme && isPlainObject(theme.colors) ? theme.colors : null;
+    if (themeColors) {
+      config.theme = config.theme || {};
+      config.theme.colors = config.theme.colors || {};
+      Object.entries(themeColors).forEach(([key, value]) => {
+        if (/^#[0-9a-f]{3,8}$/i.test(String(value || "").trim())) {
+          config.theme.colors[key] = String(value).trim();
+        }
+      });
+    }
+
+    const copy = isPlainObject(control.copy) ? control.copy : null;
+    if (copyStrings && copy) {
+      Object.entries(copy).forEach(([key, value]) => {
+        if (typeof copyStrings[key] === "string" && typeof value === "string") {
+          copyStrings[key] = value;
+        }
+      });
+    }
+
+    return control;
+  }
+
+  function saveControl(patch) {
+    const current = readControl();
+    const next = { ...current };
+    const source = isPlainObject(patch) ? patch : {};
+
+    ["restaurant", "admin", "plan", "copy"].forEach((section) => {
+      if (isPlainObject(source[section])) {
+        next[section] = { ...(isPlainObject(current[section]) ? current[section] : {}), ...source[section] };
+      }
+    });
+
+    if (isPlainObject(source.theme)) {
+      next.theme = { ...(isPlainObject(current.theme) ? current.theme : {}) };
+      if (isPlainObject(source.theme.colors)) {
+        next.theme.colors = {
+          ...(isPlainObject(current.theme && current.theme.colors) ? current.theme.colors : {}),
+          ...source.theme.colors,
+        };
+      }
+    }
+
+    if (typeof source.disabled === "boolean") next.disabled = source.disabled;
+
+    writeJson(CONTROL_KEY, next);
+    applyControlOverrides();
+    return next;
+  }
+
+  function clearControl() {
+    window.localStorage.removeItem(CONTROL_KEY);
+  }
+
+  function getSuperAdmin() {
+    return {
+      username: String(superAdminConfig.username || "").trim(),
+      password: String(superAdminConfig.password || ""),
+      sessionKey: SUPER_SESSION_KEY,
+      enabled:
+        Boolean(String(superAdminConfig.username || "").trim()) &&
+        String(superAdminConfig.password || "").length >= 8,
+    };
   }
 
   function pad(value) {
@@ -97,282 +231,98 @@
       .replace(/^-+|-+$/g, "");
   }
 
-  function normalizeRestaurant(raw) {
-    if (!raw || typeof raw !== "object") return null;
+  function planName() {
+    const name = String(planConfig.name || "").trim();
+    return PLAN_NAMES.includes(name) ? name : "Standard";
+  }
 
-    const id = String(raw.id || "").trim();
-    const name = String(raw.name || "").trim();
-    if (!id || !name) return null;
+  function planAmount() {
+    const prices = config.planPrices || {};
+    const amount = Number(prices[planName()]);
+    return Number.isFinite(amount) && amount > 0 ? amount : 0;
+  }
 
-    const status = ["Active", "Expired", "Disabled"].includes(raw.status) ? raw.status : "Active";
+  function planStatus() {
+    const control = readControl();
+    const disabled = control.disabled === true;
+    const feeStatus = planConfig.feeStatus === "Paid" ? "Paid" : "Unpaid";
+    const expiryDate = isDateKey(planConfig.expiryDate) ? String(planConfig.expiryDate) : "";
+    const expired = Boolean(expiryDate) && dateKey() > expiryDate && feeStatus !== "Paid";
 
     return {
-      id,
-      name,
-      ownerName: String(raw.ownerName || "").trim(),
-      city: String(raw.city || "").trim(),
-      whatsapp: String(raw.whatsapp || "").trim(),
-      logo: typeof raw.logo === "string" ? raw.logo : "",
-      planId: String(raw.planId || "").trim(),
-      status,
-      startDate: isDateKey(raw.startDate) ? String(raw.startDate) : "",
-      dueDate: isDateKey(raw.dueDate) ? String(raw.dueDate) : "",
-      paymentStatus: raw.paymentStatus === "Paid" ? "Paid" : "Unpaid",
-      lastPaymentDate: isDateKey(raw.lastPaymentDate) ? String(raw.lastPaymentDate) : "",
-      adminUsername: String(raw.adminUsername || "").trim(),
-      adminPassword: String(raw.adminPassword || ""),
-      createdAt: String(raw.createdAt || ""),
-      updatedAt: String(raw.updatedAt || ""),
-      isDefault: Boolean(raw.isDefault),
+      name: planName(),
+      amount: planAmount(),
+      startDate: isDateKey(planConfig.startDate) ? String(planConfig.startDate) : "",
+      expiryDate,
+      feeStatus,
+      expired,
+      disabled,
+      blocked: expired || disabled,
+      status: disabled ? "Disabled" : expired ? "Expired" : "Active",
     };
   }
 
-  function makeDefaultRestaurant() {
-    const now = new Date();
-    const today = dateKey(now);
+  function getRestaurant() {
+    const plan = planStatus();
     const credentials = adminConfig.credentials || {};
 
-    return normalizeRestaurant({
-      id: DEFAULT_RESTAURANT_ID,
+    return {
+      id: RESTAURANT_ID,
       name: String(restaurantConfig.name || "Restaurant").trim() || "Restaurant",
-      ownerName: "Restaurant Owner",
-      city: "",
-      whatsapp: String(restaurantConfig.whatsappNumber || "[RESTAURANT_WHATSAPP_NUMBER]"),
-      logo: String(settingsConfig.logo || ""),
-      planId: "premium",
-      status: "Active",
-      startDate: today,
-      dueDate: addDaysKey(today, BILLING_CYCLE_DAYS),
-      paymentStatus: "Unpaid",
-      lastPaymentDate: "",
-      adminUsername: String(credentials.username || "[ADMIN_USERNAME]"),
-      adminPassword: String(credentials.password || "[ADMIN_PASSWORD]"),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-      isDefault: true,
-    });
+      ownerName: String(restaurantConfig.ownerName || "").trim(),
+      phone: String(restaurantConfig.phone || "").trim(),
+      whatsapp: String(restaurantConfig.whatsappNumber || "").trim(),
+      city: String(restaurantConfig.city || "").trim(),
+      address: String(restaurantConfig.address || "").trim(),
+      logo: String(restaurantConfig.logo || "").trim(),
+      tableCount: Math.max(1, Math.min(999, Math.round(Number(restaurantConfig.tableCount) || 12))),
+      status: plan.status,
+      planId: plan.name.toLowerCase(),
+      planName: plan.name,
+      planAmount: plan.amount,
+      startDate: plan.startDate,
+      dueDate: plan.expiryDate,
+      paymentStatus: plan.feeStatus,
+      planExpired: plan.expired,
+      disabled: plan.disabled,
+      blocked: plan.blocked,
+      adminUsername: String(credentials.username || "").trim(),
+      adminPassword: String(credentials.password || ""),
+    };
   }
 
-  function scopedKey(baseKey, restaurantId = DEFAULT_RESTAURANT_ID) {
-    const id = String(restaurantId || "").trim() || DEFAULT_RESTAURANT_ID;
-    const raw = String(baseKey || "");
-    const prefix = "karahiHouse.";
-    const suffix = raw.startsWith(prefix) ? raw.slice(prefix.length) : raw;
-    return `${prefix}${id}.${suffix}`;
+  function getRestaurantById(id) {
+    if (!id || String(id).trim() === RESTAURANT_ID) return getRestaurant();
+    return null;
   }
 
-  function storageKeys(restaurantId = DEFAULT_RESTAURANT_ID) {
-    const scoped = {};
-    Object.keys(baseKeys).forEach((name) => {
-      scoped[name] = scopedKey(baseKeys[name], restaurantId);
-    });
-    return scoped;
+  function storageKeys() {
+    return { ...baseKeys };
   }
 
-  function writeRegistry(restaurants) {
-    try {
-      window.localStorage.setItem(REGISTRY_KEY, JSON.stringify(restaurants));
-    } catch {
-      throw new Error("Restaurant data couldn't be saved. Device storage may be full.");
-    }
-    return restaurants;
-  }
-
-  function migrateLegacyData(restaurant) {
-    if (!restaurant) return;
-
-    try {
-      if (window.localStorage.getItem(MIGRATION_KEY) === "1") return;
-
-      Object.values(baseKeys).forEach((baseKey) => {
-        const target = scopedKey(baseKey, restaurant.id);
-        const legacy = window.localStorage.getItem(baseKey);
-        if (legacy != null && window.localStorage.getItem(target) == null) {
-          window.localStorage.setItem(target, legacy);
-        }
-      });
-
-      window.localStorage.setItem(MIGRATION_KEY, "1");
-    } catch {
-      // Migration is best-effort; the app still works with config defaults.
-    }
-  }
-
-  function sweepExpired(restaurants) {
-    const today = dateKey();
-    let changed = false;
-
-    const next = restaurants.map((restaurant) => {
-      if (!restaurant.dueDate || !isDateKey(restaurant.dueDate) || restaurant.dueDate >= today) {
-        return restaurant;
-      }
-
-      if (restaurant.status === "Disabled") {
-        if (restaurant.paymentStatus !== "Unpaid") {
-          changed = true;
-          return {
-            ...restaurant,
-            paymentStatus: "Unpaid",
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return restaurant;
-      }
-
-      if (restaurant.status !== "Expired" || restaurant.paymentStatus !== "Unpaid") {
-        changed = true;
-        return {
-          ...restaurant,
-          status: "Expired",
-          paymentStatus: "Unpaid",
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
-      return restaurant;
-    });
-
-    if (changed) writeRegistry(next);
-    return next;
-  }
-
-  function ensureRegistry() {
-    let raw = null;
-    try {
-      raw = window.localStorage.getItem(REGISTRY_KEY);
-    } catch {
-      return [];
-    }
-
-    if (raw === null) {
-      const defaultRestaurant = makeDefaultRestaurant();
-      const seeded = defaultRestaurant ? [defaultRestaurant] : [];
-      try {
-        writeRegistry(seeded);
-      } catch {
-        // Continue with the in-memory record so the menu can still open.
-      }
-      migrateLegacyData(defaultRestaurant);
-      return sweepExpired(seeded);
-    }
-
-    const parsed = (() => {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    })();
-
-    if (!Array.isArray(parsed)) {
-      const defaultRestaurant = makeDefaultRestaurant();
-      const seeded = defaultRestaurant ? [defaultRestaurant] : [];
-      try {
-        writeRegistry(seeded);
-      } catch {
-        // Continue with the in-memory record.
-      }
-      migrateLegacyData(defaultRestaurant);
-      return sweepExpired(seeded);
-    }
-
-    const normalized = parsed.map(normalizeRestaurant).filter(Boolean);
-    if (normalized.length !== parsed.length) {
-      try {
-        writeRegistry(normalized);
-      } catch {
-        // Continue with the normalized list in memory.
-      }
-    }
-
-    return sweepExpired(normalized);
-  }
-
-  function getRestaurants() {
-    return ensureRegistry();
-  }
-
-  function getRestaurant(id) {
-    const wanted = String(id || "").trim();
-    if (!wanted) return null;
-    return getRestaurants().find((restaurant) => restaurant.id === wanted) || null;
-  }
-
-  function saveRestaurants(restaurants) {
-    const normalized = (Array.isArray(restaurants) ? restaurants : [])
-      .map(normalizeRestaurant)
-      .filter(Boolean);
-    return writeRegistry(normalized);
-  }
-
-  function updateRestaurant(id, patch) {
-    const wanted = String(id || "").trim();
-    if (!wanted) return null;
-
-    const restaurants = getRestaurants();
-    const index = restaurants.findIndex((restaurant) => restaurant.id === wanted);
-    if (index < 0) return null;
-
-    const next = normalizeRestaurant({
-      ...restaurants[index],
-      ...(patch && typeof patch === "object" ? patch : {}),
-      id: restaurants[index].id,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!next) return null;
-
-    const copy = restaurants.slice();
-    copy[index] = next;
-    writeRegistry(copy);
-    return next;
-  }
-
-  function removeRestaurant(id) {
-    const wanted = String(id || "").trim();
-    const restaurants = getRestaurants().filter((restaurant) => restaurant.id !== wanted);
-    writeRegistry(restaurants);
-    return restaurants;
-  }
-
-  function makeRestaurantId(name) {
-    const base = slugify(name) || "restaurant";
-    const ids = new Set(getRestaurants().map((restaurant) => restaurant.id));
-    if (!ids.has(base)) return base;
-
-    let counter = 2;
-    let candidate = `${base}-${counter}`;
-    while (ids.has(candidate)) {
-      counter += 1;
-      candidate = `${base}-${counter}`;
-    }
-    return candidate;
-  }
-
-  function readRestaurantSettings(restaurantId) {
-    const stored = readJson(storageKeys(restaurantId).settings);
+  function readRestaurantSettings() {
+    const stored = readJson(baseKeys.settings);
     return stored && typeof stored === "object" && !Array.isArray(stored) ? stored : null;
   }
 
-  function saveRestaurantSettings(restaurantId, patch) {
-    const current = readRestaurantSettings(restaurantId) || {};
+  function saveRestaurantSettings(patch) {
+    const current = readRestaurantSettings() || {};
     const next = { ...current, ...(patch && typeof patch === "object" ? patch : {}) };
-    writeJson(storageKeys(restaurantId).settings, next);
+    writeJson(baseKeys.settings, next);
     return next;
   }
 
-  function readRestaurantStaff(restaurantId) {
-    const stored = readJson(storageKeys(restaurantId).staff);
+  function readRestaurantStaff() {
+    const stored = readJson(baseKeys.staff);
     return Array.isArray(stored) ? stored.filter((member) => member && typeof member === "object") : [];
   }
 
-  function ensureSampleMenuItems(restaurantId) {
-    const keys = storageKeys(restaurantId);
-    const seedKey = scopedKey("karahiHouse.menuSamplesSeeded.v1", restaurantId);
-
+  function ensureSampleMenuItems() {
+    const seedKey = `${baseKeys.menu}.samplesSeeded`;
     try {
       if (window.localStorage.getItem(seedKey) === "1") return false;
 
-      const stored = readJson(keys.menu);
+      const stored = readJson(baseKeys.menu);
       const sampleItems = Array.isArray(config.menu)
         ? config.menu.filter((item) => item && item.sample === true)
         : [];
@@ -383,8 +333,17 @@
       }
 
       const existingIds = new Set(stored.map((item) => String((item && item.id) || "")));
-      const missing = sampleItems.filter((item) => !existingIds.has(String(item.id)));
-      if (missing.length) writeJson(keys.menu, [...stored, ...missing.map((item) => ({ ...item }))]);
+      const activeCategories = new Set(
+        stored
+          .filter((item) => item && item.active !== false)
+          .map((item) => String(item.category || ""))
+      );
+      const missing = sampleItems.filter(
+        (item) => !existingIds.has(String(item.id)) && !activeCategories.has(String(item.category))
+      );
+      if (missing.length) {
+        writeJson(baseKeys.menu, [...stored, ...missing.map((item) => ({ ...item }))]);
+      }
 
       window.localStorage.setItem(seedKey, "1");
       return missing.length > 0;
@@ -393,10 +352,37 @@
     }
   }
 
+  function configIssues() {
+    const issues = [];
+    const credentials = adminConfig.credentials || {};
+
+    if (!String(credentials.username || "").trim()) {
+      issues.push("Set admin.credentials.username in config.js.");
+    }
+    if (String(credentials.password || "").length < 8) {
+      issues.push("Admin password in config.js must be at least 8 characters.");
+    }
+    if (!String(superAdminConfig.username || "").trim()) {
+      issues.push("Set superAdmin.username in config.js.");
+    }
+    if (String(superAdminConfig.password || "").length < 8) {
+      issues.push("Super Admin password in config.js must be at least 8 characters.");
+    }
+    if (!isDateKey(planConfig.expiryDate)) {
+      issues.push("Set a valid plan.expiryDate (YYYY-MM-DD) in config.js.");
+    }
+    if (!PLAN_NAMES.includes(String(planConfig.name || "").trim())) {
+      issues.push("plan.name must be Basic, Standard or Premium.");
+    }
+
+    return issues;
+  }
+
+  applyControlOverrides();
+
   window.Tenant = {
-    DEFAULT_RESTAURANT_ID,
-    REGISTRY_KEY,
-    BILLING_CYCLE_DAYS,
+    RESTAURANT_ID,
+    DEFAULT_RESTAURANT_ID: RESTAURANT_ID,
     baseKeys,
     readJson,
     writeJson,
@@ -404,18 +390,22 @@
     isDateKey,
     addDaysKey,
     slugify,
-    getRestaurants,
+    planStatus,
     getRestaurant,
-    saveRestaurants,
-    updateRestaurant,
-    removeRestaurant,
-    makeRestaurantId,
-    scopedKey,
+    getRestaurants: () => [getRestaurant()],
+    getRestaurantById,
     storageKeys,
-    sweepExpired,
     readRestaurantSettings,
     saveRestaurantSettings,
     readRestaurantStaff,
     ensureSampleMenuItems,
+    configIssues,
+    CONTROL_KEY,
+    SUPER_SESSION_KEY,
+    readControl,
+    saveControl,
+    clearControl,
+    applyControlOverrides,
+    getSuperAdmin,
   };
 })();
