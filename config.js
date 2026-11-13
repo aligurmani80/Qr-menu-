@@ -46,7 +46,7 @@ const RESTAURANT_CONFIG = {
     // The password must be at least 8 characters.
     credentials: {
       username: "admin",
-      password: "ChangeMe123",
+      password: "admin1234",
     },
     sessionKey: "qrMenu.v2.adminSession",
   },
@@ -55,8 +55,8 @@ const RESTAURANT_CONFIG = {
   // and manage the copy, plan, fee and restaurant admin credentials.
   // SAMPLE credentials only — replace before handing a copy to a client.
   superAdmin: {
-    username: "aligurmanri80",
-    password: "alikhan0#",
+    username: "superadmin",
+    password: "superadmin123",
     sessionKey: "qrMenu.v2.superAdminSession",
   },
 
