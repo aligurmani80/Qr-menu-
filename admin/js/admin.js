@@ -8264,6 +8264,17 @@
 
   function initLogin() {
     const isSuperLogin = page === "super-login";
+
+    if (isSuperLogin) {
+      // Drop any saved Super Admin session so the config.js credentials always apply.
+      try {
+        window.sessionStorage.removeItem(superSessionKey);
+        window.localStorage.removeItem(superSessionKey);
+      } catch {
+        // Storage can be blocked; the sign-in form still works.
+      }
+    }
+
     let initialError = "";
     const activeSession = isSuperLogin ? getSuperAdminSession() : getActiveSession();
 

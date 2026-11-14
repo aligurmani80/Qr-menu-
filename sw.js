@@ -8,7 +8,7 @@
 
 "use strict";
 
-const CACHE_NAME = "qr-menu-shell-20261113i";
+const CACHE_NAME = "qr-menu-shell-20261114a";
 const CORE_ASSETS = [
   "./",
   "./index.html",

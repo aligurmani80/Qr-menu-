@@ -56,7 +56,7 @@ const RESTAURANT_CONFIG = {
   // SAMPLE credentials only — replace before handing a copy to a client.
   superAdmin: {
     username: "superadmin",
-    password: "superadmin123",
+    password: "KarahiSuper@2026",
     sessionKey: "qrMenu.v2.superAdminSession",
   },
 
