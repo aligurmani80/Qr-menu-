@@ -165,8 +165,12 @@
       '</main>';
   }
 
-  const tenantRestaurant = Tenant.getRestaurant();
-  const plan = Tenant.planStatus();
+  const activeTenantId =
+    typeof Tenant.activeRestaurantId === "function"
+      ? Tenant.activeRestaurantId()
+      : Tenant.DEFAULT_RESTAURANT_ID;
+  const tenantRestaurant = Tenant.getRestaurant(activeTenantId) || Tenant.getRestaurant();
+  const plan = Tenant.planStatus(activeTenantId) || Tenant.planStatus();
 
   if (plan.expired || plan.disabled) {
     renderPlanExpired(tenantRestaurant);
@@ -174,7 +178,11 @@
   }
 
   const restaurantId = tenantRestaurant.id;
+  const installedCopy =
+    typeof Tenant.isDefaultRestaurant !== "function" || Tenant.isDefaultRestaurant(restaurantId);
   const tenantKeys = Tenant.storageKeys(restaurantId);
+
+  if (typeof setSupabaseRestaurantId === "function") setSupabaseRestaurantId(restaurantId);
 
   /* ------------------------------------------------------------------------
      Config-derived values and helpers
@@ -192,7 +200,12 @@
   const initialStatus = String(ordersConfig.initialStatus || "Received");
   const ordersKey = tenantKeys.orders;
   const sequenceKey = tenantKeys.sequence;
-  const startingNumber = toPositiveInteger(ordersConfig.startingNumber, 1025);
+  const tenantOrderStart =
+    typeof Tenant.orderStartFor === "function" ? Tenant.orderStartFor(restaurantId) : 0;
+  const startingNumber =
+    Number.isFinite(tenantOrderStart) && tenantOrderStart > 0
+      ? tenantOrderStart
+      : toPositiveInteger(ordersConfig.startingNumber, 1025);
   const menuStorageKey = tenantKeys.menu;
   const settingsStorageKey = tenantKeys.settings;
   const offersStorageKey = tenantKeys.offers;
@@ -204,7 +217,8 @@
   const feedbackKey = tenantKeys.feedback;
   const categories = Array.isArray(CONFIG.categories) ? CONFIG.categories : [];
   const categoryById = new Map(categories.map((category) => [category.id, category]));
-  const defaultMenuItems = Array.isArray(CONFIG.menu) ? CONFIG.menu : [];
+  const defaultMenuItems =
+    installedCopy && Array.isArray(CONFIG.menu) ? CONFIG.menu : [];
   const defaultSettings = {
     restaurantName: defaultRestaurantName,
     logo: String(tenantRestaurant.logo || ""),
@@ -1885,15 +1899,31 @@
     return `ORD-${String(sequence).padStart(4, "0")}`;
   }
 
+  function highestOwnOrderNumber() {
+    let highest = 0;
+    try {
+      readOrders().forEach((order) => {
+        const matched = /^ORD-(\d+)$/.exec(String((order && order.orderNumber) || ""));
+        if (matched) highest = Math.max(highest, Number.parseInt(matched[1], 10));
+      });
+    } catch {
+      // An unreadable order list only means the stored counter wins.
+    }
+    return highest;
+  }
+
+  // This restaurant's own counter, its own orders and its own number block —
+  // never a counter shared with the other restaurants.
   function readSequence() {
+    let stored = startingNumber;
     try {
       const raw = window.localStorage.getItem(sequenceKey);
       const parsed = Number.parseInt(raw || "", 10);
-      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+      if (Number.isFinite(parsed) && parsed > 0) stored = parsed;
     } catch {
       // Fall back to the configured starting number.
     }
-    return startingNumber;
+    return Math.max(stored, startingNumber, highestOwnOrderNumber() + 1);
   }
 
   function appendOrder(order) {
@@ -1910,7 +1940,7 @@
     }
   }
 
-  function placeOrder() {
+  async function placeOrder() {
     if (state.placingOrder) return;
 
     const entries = getCartEntries();
@@ -1995,6 +2025,17 @@
       status: initialStatus,
     };
 
+    const newOrder = {
+      order_id: order.orderNumber,
+      restaurant_id: restaurantId,
+      table_no: order.tableNumber ? String(order.tableNumber) : null,
+      customer_name: order.customerName,
+      customer_mobile: order.customerMobile,
+      items: order.items,
+      total_amount: order.total,
+      order_type: order.mode,
+    };
+
     try {
       appendOrder(order);
       rememberMyOrder(order.orderNumber);
@@ -2005,6 +2046,13 @@
       if (retryButton) retryButton.focus({ preventScroll: true });
       showToast(copy("saveFailed"));
       return;
+    }
+
+    try {
+      const savedOnline = await saveOrderToSupabase(newOrder);
+      if (!savedOnline) console.warn("Order saved on this device only.");
+    } catch (error) {
+      console.error("Supabase order save failed:", error);
     }
 
     writeSequence(sequence + 1);
@@ -2824,7 +2872,7 @@
 
   applyTheme();
   if (window.Tenant && typeof Tenant.ensureSampleMenuItems === "function") {
-    Tenant.ensureSampleMenuItems();
+    Tenant.ensureSampleMenuItems(restaurantId);
   }
   loadSettings();
   loadMenu();

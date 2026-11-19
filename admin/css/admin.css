@@ -3872,6 +3872,12 @@ body.modal-open {
   line-height: 1.5;
 }
 
+.login-error--note {
+  border-color: #CFE3D6;
+  background: #F1F8F3;
+  color: #1F5B40;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;

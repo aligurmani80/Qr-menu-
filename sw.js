@@ -8,7 +8,7 @@
 
 "use strict";
 
-const CACHE_NAME = "qr-menu-shell-20261114a";
+const CACHE_NAME = "qr-menu-shell-20261115d";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -18,6 +18,7 @@ const CORE_ASSETS = [
   "./css/style.css",
   "./css/landing.css",
   "./js/tenant.js",
+  "./js/super-credentials.js",
   "./js/main.js",
   "./js/landing.js",
   "./js/pwa.js",
@@ -71,6 +72,14 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (
+    url.pathname.endsWith("/js/supabase.js") ||
+    url.pathname.endsWith("/js/super-credentials.js")
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   if (isNetworkFirst(url, request)) {
     event.respondWith(

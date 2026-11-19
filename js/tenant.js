@@ -1,10 +1,14 @@
 /* ==========================================================================
-   SINGLE-RESTAURANT DATA LAYER
+   SINGLE-RESTAURANT DATA LAYER + SUPER ADMIN REGISTRY
 
-   One copy of this project serves exactly one restaurant. Default identity,
+   One copy of this project serves the installed restaurant. Default identity,
    logins and plan/fee values come from /config.js. A Super Admin can save
    overrides for those values in localStorage; the overrides are applied on
    top of config.js on every page load and survive a refresh.
+
+   Restaurants added from the Super Admin panel are registry records with their
+   own admin login, plan and storage-key namespace. They start with an empty
+   menu: no sample categories or products are copied into them.
 
    Operational data (menu edits, orders, tables, offers, feedback) lives in
    localStorage on this device only.
@@ -32,6 +36,10 @@
   const PLAN_NAMES = ["Basic", "Standard", "Premium"];
   const CONTROL_KEY = storageConfig.controlKey || "qrMenu.v2.control";
   const SUPER_SESSION_KEY = superAdminConfig.sessionKey || "qrMenu.v2.superAdminSession";
+  const RESTAURANTS_KEY = storageConfig.restaurantsKey || "qrMenu.v2.restaurants";
+  const SUPER_CREDENTIALS_KEY =
+    storageConfig.superCredentialsKey || "qrMenu.v2.superAdminCredentials";
+  const TENANT_PARAM = storageConfig.restaurantParam || "r";
 
   const baseKeys = Object.freeze({
     menu: storageConfig.menuKey || "qrMenu.v2.menu",
@@ -65,6 +73,255 @@
 
   function isPlainObject(value) {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  }
+
+  /* ------------------------------------------------------------------------
+     Restaurant registry
+
+     config.js and the control overrides describe the copy installed on this
+     domain (id "restaurant"). Restaurants added by a Super Admin are kept as
+     records here and get their own storage keys, so their menu, orders and
+     tables never mix with the installed copy.
+     ------------------------------------------------------------------------ */
+
+  function isDefaultId(value) {
+    const id = String(value == null ? "" : value).trim();
+    return !id || id === RESTAURANT_ID;
+  }
+
+  function storageKeys(restaurantId) {
+    if (isDefaultId(restaurantId)) return { ...baseKeys };
+
+    const id = slugify(restaurantId);
+    const scoped = {};
+    Object.keys(baseKeys).forEach((name) => {
+      scoped[name] = `${storageConfig.prefix || "qrMenu.v2"}.r.${id}.${name}`;
+    });
+    return scoped;
+  }
+
+  function clampTableCount(value) {
+    const number = Math.round(Number(value));
+    if (!Number.isFinite(number)) return 12;
+    return Math.max(1, Math.min(999, number));
+  }
+
+  function normalizePlan(raw) {
+    const plan = isPlainObject(raw) ? raw : {};
+    return {
+      name: PLAN_NAMES.includes(String(plan.name || "").trim())
+        ? String(plan.name).trim()
+        : "Standard",
+      startDate: isDateKey(plan.startDate) ? String(plan.startDate) : "",
+      expiryDate: isDateKey(plan.expiryDate) ? String(plan.expiryDate) : "",
+      feeStatus: plan.feeStatus === "Paid" ? "Paid" : "Unpaid",
+    };
+  }
+
+  /* Order numbers get one thousand-number block per restaurant, so two
+     restaurants can never print the same order number even on their first day.
+     The installed copy keeps the config block; added restaurants start at 2001. */
+  const ORDER_BLOCK_SIZE = 1000;
+  const ORDER_BLOCK_FIRST = 2;
+
+  function seqBaseForIndex(index) {
+    return (index + ORDER_BLOCK_FIRST) * ORDER_BLOCK_SIZE + 1;
+  }
+
+  function normalizeSeqBase(value) {
+    const number = Math.round(Number(value));
+    const floor = seqBaseForIndex(0);
+    return Number.isFinite(number) && number >= floor && number % ORDER_BLOCK_SIZE === 1
+      ? number
+      : 0;
+  }
+
+  function orderStartFor(restaurantId) {
+    if (isDefaultId(restaurantId)) return 0;
+
+    const records = readRestaurants();
+    const id = slugify(restaurantId);
+    const index = records.findIndex((record) => record.id === id);
+    if (index === -1) return 0;
+
+    return normalizeSeqBase(records[index].seqBase) || seqBaseForIndex(index);
+  }
+
+  function normalizeRecord(raw) {
+    if (!isPlainObject(raw)) return null;
+
+    const id = slugify(raw.id || raw.name);
+    const name = String(raw.name || "").trim();
+    if (!id || !name || id === RESTAURANT_ID) return null;
+
+    const admin = isPlainObject(raw.admin) ? raw.admin : {};
+    return {
+      id,
+      name,
+      ownerName: String(raw.ownerName || "").trim(),
+      phone: String(raw.phone || "").trim(),
+      whatsappNumber: String(raw.whatsappNumber || "").trim(),
+      city: String(raw.city || "").trim(),
+      address: String(raw.address || "").trim(),
+      logo: String(raw.logo || "").trim(),
+      tableCount: clampTableCount(raw.tableCount),
+      plan: normalizePlan(raw.plan),
+      admin: {
+        username: String(admin.username || "").trim(),
+        password: String(admin.password || ""),
+      },
+      disabled: raw.disabled === true,
+      seqBase: normalizeSeqBase(raw.seqBase),
+      createdAt: String(raw.createdAt || ""),
+    };
+  }
+
+  function readRestaurants() {
+    const stored = readJson(RESTAURANTS_KEY);
+    if (!Array.isArray(stored)) return [];
+    return stored.map(normalizeRecord).filter(Boolean);
+  }
+
+  function writeRestaurants(records) {
+    writeJson(RESTAURANTS_KEY, Array.isArray(records) ? records : []);
+    return Array.isArray(records) ? records : [];
+  }
+
+  function findRecord(restaurantId) {
+    const id = slugify(restaurantId);
+    if (!id) return null;
+    return readRestaurants().find((record) => record.id === id) || null;
+  }
+
+  function uniqueRecordId(base, records) {
+    const taken = new Set(records.map((record) => record.id));
+    const root = base || "restaurant";
+    let id = root;
+    let suffix = 2;
+    while (taken.has(id) || id === RESTAURANT_ID) {
+      id = `${root}-${suffix}`;
+      suffix += 1;
+    }
+    return id;
+  }
+
+  function addRestaurant(details) {
+    const source = isPlainObject(details) ? details : {};
+    const records = readRestaurants();
+    const record = normalizeRecord({
+      ...source,
+      id: uniqueRecordId(slugify(source.name), records),
+      seqBase: seqBaseForIndex(records.length),
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!record) throw new Error("Enter the restaurant name.");
+
+    writeRestaurants([...records, record]);
+    return record;
+  }
+
+  function updateRestaurant(restaurantId, patch) {
+    const id = slugify(restaurantId);
+    const records = readRestaurants();
+    const index = records.findIndex((record) => record.id === id);
+    if (index === -1) throw new Error("That restaurant could not be found.");
+
+    const source = isPlainObject(patch) ? patch : {};
+    const current = records[index];
+    const record = normalizeRecord({
+      ...current,
+      ...source,
+      id,
+      plan: isPlainObject(source.plan) ? { ...current.plan, ...source.plan } : current.plan,
+      admin: isPlainObject(source.admin) ? { ...current.admin, ...source.admin } : current.admin,
+    });
+
+    if (!record) throw new Error("Enter the restaurant name.");
+
+    records[index] = record;
+    writeRestaurants(records);
+    return record;
+  }
+
+  function clearRestaurantData(restaurantId) {
+    if (isDefaultId(restaurantId)) return;
+    Object.values(storageKeys(restaurantId)).forEach((key) => {
+      window.localStorage.removeItem(key);
+    });
+  }
+
+  function deleteRestaurant(restaurantId) {
+    const id = slugify(restaurantId);
+    if (!id || id === RESTAURANT_ID) throw new Error("This copy cannot be deleted.");
+
+    const records = readRestaurants();
+    const remaining = records.filter((record) => record.id !== id);
+    if (remaining.length === records.length) throw new Error("That restaurant could not be found.");
+
+    writeRestaurants(remaining);
+    clearRestaurantData(id);
+    return true;
+  }
+
+  function setRestaurantDisabled(restaurantId, disabled) {
+    return updateRestaurant(restaurantId, { disabled: Boolean(disabled) });
+  }
+
+  function isAdminUsernameTaken(username, exceptId) {
+    const wanted = String(username || "").trim().toLowerCase();
+    if (!wanted) return false;
+
+    const skip = slugify(exceptId);
+    if (String(restaurantAdminCredentials().username || "").toLowerCase() === wanted) {
+      return true;
+    }
+
+    return readRestaurants().some(
+      (record) =>
+        record.id !== skip && String(record.admin.username || "").toLowerCase() === wanted
+    );
+  }
+
+  function restaurantAdminCredentials() {
+    const credentials = adminConfig.credentials || {};
+    return {
+      username: String(credentials.username || "").trim(),
+      password: String(credentials.password || ""),
+    };
+  }
+
+  function planFromRecord(record) {
+    const plan = normalizePlan(record && record.plan);
+    const prices = config.planPrices || {};
+    const amount = Number(prices[plan.name]);
+    const expired =
+      Boolean(plan.expiryDate) && dateKey() > plan.expiryDate && plan.feeStatus !== "Paid";
+    const disabled = Boolean(record && record.disabled);
+
+    return {
+      name: plan.name,
+      amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+      startDate: plan.startDate,
+      expiryDate: plan.expiryDate,
+      feeStatus: plan.feeStatus,
+      expired,
+      disabled,
+      blocked: expired || disabled,
+      status: disabled ? "Disabled" : expired ? "Expired" : "Active",
+    };
+  }
+
+  function activeRestaurantId() {
+    try {
+      const id = String(
+        new URLSearchParams(window.location.search).get(TENANT_PARAM) || ""
+      ).trim();
+      if (!id || id === RESTAURANT_ID) return RESTAURANT_ID;
+      return findRecord(id) ? id : RESTAURANT_ID;
+    } catch {
+      return RESTAURANT_ID;
+    }
   }
 
   function readControl() {
@@ -177,15 +434,55 @@
     window.localStorage.removeItem(CONTROL_KEY);
   }
 
-  function getSuperAdmin() {
+  function getSuperAdminFromConfig() {
     return {
       username: String(superAdminConfig.username || "").trim(),
       password: String(superAdminConfig.password || ""),
-      sessionKey: SUPER_SESSION_KEY,
-      enabled:
-        Boolean(String(superAdminConfig.username || "").trim()) &&
-        String(superAdminConfig.password || "").length >= 8,
     };
+  }
+
+  /* The browser only ever keeps the Super Admin username and a SHA-256 hash of
+     the password, and only as an offline fallback. The live check happens in
+     Postgres. A hash left over from the old plain-text cache is dropped. */
+  function getSuperAdmin() {
+    const cached = readJson(SUPER_CREDENTIALS_KEY);
+    const stored = isPlainObject(cached) ? cached : {};
+    const fallback = getSuperAdminFromConfig();
+    const username = String(stored.username || "").trim() || fallback.username;
+    const rawHash = String(stored.passwordHash || "").trim().toLowerCase();
+    const passwordHash = /^[a-f0-9]{64}$/.test(rawHash) ? rawHash : "";
+
+    if (typeof stored.password === "string" && stored.password) {
+      try {
+        writeJson(SUPER_CREDENTIALS_KEY, { username, passwordHash });
+      } catch {
+        // Storage is read-only; the plain value is simply not used.
+      }
+    }
+
+    return {
+      username,
+      passwordHash,
+      sessionKey: SUPER_SESSION_KEY,
+      enabled: Boolean(username),
+    };
+  }
+
+  function saveSuperCredentials(credentials) {
+    const source = isPlainObject(credentials) ? credentials : {};
+    const username = String(source.username || "").trim();
+    const passwordHash = String(source.passwordHash || "").trim().toLowerCase();
+    if (!username) throw new Error("Enter a username.");
+    if (!/^[a-f0-9]{64}$/.test(passwordHash)) {
+      throw new Error("The Super Admin login could not be stored on this device.");
+    }
+
+    writeJson(SUPER_CREDENTIALS_KEY, { username, passwordHash });
+    return { username, passwordHash };
+  }
+
+  function clearSuperCredentialsCache() {
+    window.localStorage.removeItem(SUPER_CREDENTIALS_KEY);
   }
 
   function pad(value) {
@@ -242,7 +539,12 @@
     return Number.isFinite(amount) && amount > 0 ? amount : 0;
   }
 
-  function planStatus() {
+  function planStatus(restaurantId) {
+    if (!isDefaultId(restaurantId)) {
+      const record = findRecord(restaurantId);
+      return record ? planFromRecord(record) : null;
+    }
+
     const control = readControl();
     const disabled = control.disabled === true;
     const feeStatus = planConfig.feeStatus === "Paid" ? "Paid" : "Unpaid";
@@ -262,7 +564,11 @@
     };
   }
 
-  function getRestaurant() {
+  function getRestaurant(restaurantId) {
+    if (restaurantId !== undefined && !isDefaultId(restaurantId)) {
+      return getRestaurantById(restaurantId);
+    }
+
     const plan = planStatus();
     const credentials = adminConfig.credentials || {};
 
@@ -292,12 +598,43 @@
   }
 
   function getRestaurantById(id) {
-    if (!id || String(id).trim() === RESTAURANT_ID) return getRestaurant();
-    return null;
+    if (isDefaultId(id)) return getRestaurant();
+
+    const record = findRecord(id);
+    if (!record) return null;
+
+    const plan = planFromRecord(record);
+    return {
+      id: record.id,
+      name: record.name,
+      ownerName: record.ownerName,
+      phone: record.phone,
+      whatsapp: record.whatsappNumber,
+      city: record.city,
+      address: record.address,
+      logo: record.logo,
+      tableCount: record.tableCount,
+      status: plan.status,
+      planId: plan.name.toLowerCase(),
+      planName: plan.name,
+      planAmount: plan.amount,
+      startDate: plan.startDate,
+      dueDate: plan.expiryDate,
+      paymentStatus: plan.feeStatus,
+      planExpired: plan.expired,
+      disabled: plan.disabled,
+      blocked: plan.blocked,
+      adminUsername: record.admin.username,
+      adminPassword: record.admin.password,
+    };
   }
 
-  function storageKeys() {
-    return { ...baseKeys };
+  function getRestaurants() {
+    const installed = getRestaurant();
+    const added = readRestaurants()
+      .map((record) => getRestaurantById(record.id))
+      .filter(Boolean);
+    return [installed, ...added];
   }
 
   function readRestaurantSettings() {
@@ -317,7 +654,9 @@
     return Array.isArray(stored) ? stored.filter((member) => member && typeof member === "object") : [];
   }
 
-  function ensureSampleMenuItems() {
+  function ensureSampleMenuItems(restaurantId) {
+    if (!isDefaultId(restaurantId)) return false;
+
     const seedKey = `${baseKeys.menu}.samplesSeeded`;
     try {
       if (window.localStorage.getItem(seedKey) === "1") return false;
@@ -392,9 +731,10 @@
     slugify,
     planStatus,
     getRestaurant,
-    getRestaurants: () => [getRestaurant()],
+    getRestaurants,
     getRestaurantById,
     storageKeys,
+    orderStartFor,
     readRestaurantSettings,
     saveRestaurantSettings,
     readRestaurantStaff,
@@ -407,5 +747,20 @@
     clearControl,
     applyControlOverrides,
     getSuperAdmin,
+    getSuperAdminFromConfig,
+    saveSuperCredentials,
+    clearSuperCredentialsCache,
+    SUPER_CREDENTIALS_KEY,
+    RESTAURANTS_KEY,
+    TENANT_PARAM,
+    isDefaultRestaurant: isDefaultId,
+    readRestaurants,
+    addRestaurant,
+    updateRestaurant,
+    deleteRestaurant,
+    setRestaurantDisabled,
+    clearRestaurantData,
+    isAdminUsernameTaken,
+    activeRestaurantId,
   };
 })();
