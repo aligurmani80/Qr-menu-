@@ -42,6 +42,7 @@
   const TENANT_PARAM = storageConfig.restaurantParam || "r";
 
   const baseKeys = Object.freeze({
+    categories: storageConfig.categoriesKey || "qrMenu.v2.categories",
     menu: storageConfig.menuKey || "qrMenu.v2.menu",
     settings: storageConfig.settingsKey || "qrMenu.v2.settings",
     tables: storageConfig.tablesKey || "qrMenu.v2.tables",
@@ -84,9 +85,25 @@
      tables never mix with the installed copy.
      ------------------------------------------------------------------------ */
 
+  function isDefaultSlug(slug) {
+    const s = slugify(slug);
+    if (!s) return false;
+    const defaultNameSlug = slugify(restaurantConfig.name || "Karahi House");
+    return s === RESTAURANT_ID || s === defaultNameSlug || s === "karahi-house";
+  }
+
   function isDefaultId(value) {
     const id = String(value == null ? "" : value).trim();
-    return !id || id === RESTAURANT_ID;
+    if (!id || id === RESTAURANT_ID) return true;
+    return isDefaultSlug(id);
+  }
+
+  function getRestaurantSlug(restaurantId) {
+    if (isDefaultId(restaurantId)) {
+      return slugify(restaurantConfig.name || "karahi-house") || "karahi-house";
+    }
+    const record = findRecord(restaurantId);
+    return record ? record.id : slugify(restaurantId);
   }
 
   function storageKeys(restaurantId) {
@@ -218,6 +235,13 @@
     if (!record) throw new Error("Enter the restaurant name.");
 
     writeRestaurants([...records, record]);
+
+    // Give each restaurant its own categories and products container
+    // New restaurant starts with 0 categories and 0 products
+    const scoped = storageKeys(record.id);
+    writeJson(scoped.categories, []);
+    writeJson(scoped.menu, []);
+
     return record;
   }
 
@@ -314,11 +338,14 @@
 
   function activeRestaurantId() {
     try {
-      const id = String(
+      const param = String(
         new URLSearchParams(window.location.search).get(TENANT_PARAM) || ""
       ).trim();
-      if (!id || id === RESTAURANT_ID) return RESTAURANT_ID;
-      return findRecord(id) ? id : RESTAURANT_ID;
+      if (!param) return RESTAURANT_ID; // Default installed copy
+      const slug = slugify(param);
+      if (isDefaultSlug(slug)) return RESTAURANT_ID;
+      const record = findRecord(slug);
+      return record ? record.id : null; // Invalid slug -> null
     } catch {
       return RESTAURANT_ID;
     }
@@ -565,6 +592,7 @@
   }
 
   function getRestaurant(restaurantId) {
+    if (restaurantId === null) return null;
     if (restaurantId !== undefined && !isDefaultId(restaurantId)) {
       return getRestaurantById(restaurantId);
     }
@@ -598,6 +626,7 @@
   }
 
   function getRestaurantById(id) {
+    if (!id || id === null) return null;
     if (isDefaultId(id)) return getRestaurant();
 
     const record = findRecord(id);
@@ -627,6 +656,40 @@
       adminUsername: record.admin.username,
       adminPassword: record.admin.password,
     };
+  }
+
+  function getCategories(restaurantId) {
+    const keys = storageKeys(restaurantId);
+    const stored = readJson(keys.categories);
+    if (Array.isArray(stored)) return stored;
+    if (isDefaultId(restaurantId)) {
+      return Array.isArray(config.categories) ? config.categories : [];
+    }
+    return [];
+  }
+
+  function saveCategories(restaurantId, categoriesList) {
+    const keys = storageKeys(restaurantId);
+    const items = Array.isArray(categoriesList) ? categoriesList : [];
+    writeJson(keys.categories, items);
+    return items;
+  }
+
+  function getMenuItems(restaurantId) {
+    const keys = storageKeys(restaurantId);
+    const stored = readJson(keys.menu);
+    if (Array.isArray(stored)) return stored;
+    if (isDefaultId(restaurantId)) {
+      return Array.isArray(config.menu) ? config.menu : [];
+    }
+    return [];
+  }
+
+  function saveMenuItems(restaurantId, itemsList) {
+    const keys = storageKeys(restaurantId);
+    const items = Array.isArray(itemsList) ? itemsList : [];
+    writeJson(keys.menu, items);
+    return items;
   }
 
   function getRestaurants() {
@@ -733,7 +796,12 @@
     getRestaurant,
     getRestaurants,
     getRestaurantById,
+    getRestaurantSlug,
     storageKeys,
+    getCategories,
+    saveCategories,
+    getMenuItems,
+    saveMenuItems,
     orderStartFor,
     readRestaurantSettings,
     saveRestaurantSettings,

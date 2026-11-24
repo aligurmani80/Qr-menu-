@@ -165,11 +165,36 @@
       '</main>';
   }
 
+  function renderRestaurantNotFound() {
+    document.title = "Restaurant not found";
+    document.body.className = "menu-blocked-page";
+    document.body.innerHTML =
+      '<main class="blocked-menu">' +
+        '<div class="blocked-card">' +
+          '<span class="blocked-mark" aria-hidden="true">?</span>' +
+          '<p class="blocked-kicker">Menu</p>' +
+          '<h1 class="blocked-title">Restaurant not found</h1>' +
+          '<p class="blocked-text">This restaurant does not exist or the link is invalid.</p>' +
+        '</div>' +
+      '</main>';
+  }
+
   const activeTenantId =
     typeof Tenant.activeRestaurantId === "function"
       ? Tenant.activeRestaurantId()
-      : Tenant.DEFAULT_RESTAURANT_ID;
-  const tenantRestaurant = Tenant.getRestaurant(activeTenantId) || Tenant.getRestaurant();
+      : null;
+
+  if (!activeTenantId) {
+    renderRestaurantNotFound();
+    return;
+  }
+
+  const tenantRestaurant = Tenant.getRestaurant(activeTenantId);
+  if (!tenantRestaurant) {
+    renderRestaurantNotFound();
+    return;
+  }
+
   const plan = Tenant.planStatus(activeTenantId) || Tenant.planStatus();
 
   if (plan.expired || plan.disabled) {
@@ -215,7 +240,10 @@
   const billRequestsKey = tenantKeys.billRequests;
   const myOrdersKey = tenantKeys.myOrders;
   const feedbackKey = tenantKeys.feedback;
-  const categories = Array.isArray(CONFIG.categories) ? CONFIG.categories : [];
+  const rawCategories = typeof Tenant.getCategories === "function"
+    ? Tenant.getCategories(restaurantId)
+    : (installedCopy && Array.isArray(CONFIG.categories) ? CONFIG.categories : []);
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const defaultMenuItems =
     installedCopy && Array.isArray(CONFIG.menu) ? CONFIG.menu : [];
@@ -683,7 +711,7 @@
 
   function loadMenu() {
     const stored = normalizeMenu(readStoredJson(menuStorageKey));
-    const source = stored || normalizeMenu(defaultMenuItems) || [];
+    const source = stored || (installedCopy ? normalizeMenu(defaultMenuItems) : []) || [];
 
     baseMenuItems = source.filter((item) => item.active);
     mergeDealsIntoMenu();
@@ -1082,7 +1110,13 @@
      ------------------------------------------------------------------------ */
 
   function renderCategoryRail() {
-    const railItems = [ALL_CATEGORY, ...categories];
+    const railItems = categories.length ? [ALL_CATEGORY, ...categories] : [];
+    if (!railItems.length) {
+      categoryRail.innerHTML = "";
+      categoryRail.hidden = true;
+      return;
+    }
+    categoryRail.hidden = false;
     categoryRail.innerHTML = railItems
       .map((category) => {
         const active = category.id === state.categoryId;

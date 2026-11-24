@@ -2,123 +2,210 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#FF5A00">
-  <meta name="color-scheme" content="light">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="Sign in to the local restaurant admin for menu, orders, tables and offers.">
-  <title>Sign in | Restaurant Admin</title>
-
-  <link rel="icon" href="../assets/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" href="../assets/favicon.png" sizes="64x64">
+  <title>QR Menu — Portal Login</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=20261113g">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top center, #1E1E26 0%, #09090B 70%);
+      padding: 20px;
+    }
 
-  <script src="../config.js?v=20261113g" defer></script>
-  <script src="../js/tenant.js?v=20261115a" defer></script>
-  <script src="js/admin.js?v=20261115b" defer></script>
-  <script src="../js/pwa.js?v=20261113h" defer></script>
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-glow {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 120px;
+      background: var(--primary);
+      filter: blur(80px);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #FF5A00 0%, #FF8533 100%);
+      border-radius: var(--radius-lg);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px var(--primary-glow);
+      color: #FFF;
+      font-size: 26px;
+    }
+
+    .login-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #FFF;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .error-alert {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #F87171;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .remember-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .remember-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="login-page" data-page="login">
-  <main class="login-shell">
-    <section class="login-brand-panel" aria-label="Restaurant admin">
-      <a class="login-brand" href="../index.html">
-        <span class="brand-mark brand-mark--lg" data-login-logo data-image-fallback data-initial="K">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <rect x="3.5" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
-            <rect x="14.1" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
-            <rect x="3.5" y="14.1" width="6.4" height="6.4" rx="1.4"></rect>
-            <path d="M6.6 6.6h.8M17.1 6.6h.8M6.6 17.1h.8"></path>
-            <path d="M14.1 14.1h2.7v2.7h-2.7zM19.8 14.1h.7M14.1 19.8h2.7M19.6 19.6h.9"></path>
-          </svg>
-          <span class="brand-dot" aria-hidden="true"></span>
-        </span>
-        <span class="login-brand-copy">
-          <strong data-login-name>Restaurant</strong>
-          <span>Restaurant Admin</span>
-        </span>
-      </a>
+<body>
+  <div class="login-container">
+    <div class="login-glow"></div>
+    
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </div>
+      <h2 class="login-title">Management Portal</h2>
+      <p class="login-subtitle">Sign in to access your restaurant operations</p>
+    </div>
 
-      <div class="login-pitch">
-        <span class="login-kicker">Table service, simplified</span>
-        <h1>Run the floor<br>from one <em>quiet</em> screen.</h1>
-        <p>Menu, table QR codes, live orders, offers and the guest-facing settings — all in one place for this restaurant.</p>
-        <div class="login-points">
-          <span>
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
-            Live table orders
-          </span>
-          <span>
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
-            Menu and QR control
-          </span>
-          <span>
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.3 4.3L19 6.5"></path></svg>
-            Cash at table only
-          </span>
-        </div>
+    <div id="login-error" class="error-alert">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span id="error-message">Wrong username or password</span>
+    </div>
+
+    <form id="login-form" class="login-form" onsubmit="handleLoginSubmit(event)">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input class="form-control" type="text" id="username" name="username" placeholder="Enter username" autocomplete="username" required autofocus>
       </div>
 
-      <p class="login-brand-foot">Local-only admin · Data stays in this browser</p>
-    </section>
-
-    <section class="login-panel">
-      <div class="login-card">
-        <div class="login-card-brand">
-          <span class="brand-mark" data-login-logo data-image-fallback data-initial="K">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <rect x="3.5" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
-              <rect x="14.1" y="3.5" width="6.4" height="6.4" rx="1.4"></rect>
-              <rect x="3.5" y="14.1" width="6.4" height="6.4" rx="1.4"></rect>
-              <path d="M14.1 14.1h2.7v2.7h-2.7zM19.8 14.1h.7M14.1 19.8h2.7M19.6 19.6h.9"></path>
-            </svg>
-            <span class="brand-dot" aria-hidden="true"></span>
-          </span>
-          <strong data-login-name>Restaurant</strong>
-        </div>
-
-        <p class="login-eyebrow">Restaurant admin</p>
-        <h1 class="login-title">Welcome back</h1>
-        <p class="login-sub">Sign in to manage the menu, orders, tables and offers.</p>
-
-        <div class="login-error" data-login-error role="alert" hidden></div>
-
-        <form class="login-form" id="login-form" novalidate>
-          <div class="field">
-            <label for="login-username">Username</label>
-            <input id="login-username" name="username" type="text" autocomplete="username" spellcheck="false" required>
-          </div>
-          <div class="field">
-            <label for="login-password">Password</label>
-            <div class="password-field">
-              <input id="login-password" name="password" type="password" autocomplete="current-password" required>
-              <button class="icon-button password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button class="btn btn-primary login-submit" type="submit">Sign in</button>
-        </form>
-
-        <div class="login-links">
-          <a href="../index.html">← Back to customer menu</a>
-          <span>One restaurant only</span>
-        </div>
-
-        <p class="login-foot">The admin login lives in <code>config.js</code> at the project root. Change it there for every new copy.</p>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-control" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
       </div>
-    </section>
-  </main>
 
-  <div id="admin-toast" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+      <div class="remember-row">
+        <label class="remember-check">
+          <input type="checkbox" id="remember-me" checked>
+          <span>Keep me logged in</span>
+        </label>
+      </div>
 
-  <noscript>
-    <div class="boot-error"><h1>JavaScript is required</h1><p>Turn on JavaScript to use the restaurant admin.</p></div>
-  </noscript>
+      <button type="submit" class="btn btn-primary login-btn">
+        <span>Sign In</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Auto-redirect if already logged in
+    document.addEventListener("DOMContentLoaded", () => {
+      const session = Auth.getSession();
+      if (session && session.role) {
+        window.location.replace("index.html");
+      }
+    });
+
+    function handleLoginSubmit(event) {
+      event.preventDefault();
+      const usernameInput = document.getElementById("username").value.trim();
+      const passwordInput = document.getElementById("password").value;
+      const remember = document.getElementById("remember-me").checked;
+      const errorBox = document.getElementById("login-error");
+      const errorMsg = document.getElementById("error-message");
+
+      const result = Auth.login(usernameInput, passwordInput, remember);
+      if (result.success) {
+        errorBox.style.display = "none";
+        if (result.role === "superadmin") {
+          window.location.replace("index.html#super-admin");
+        } else {
+          window.location.replace("index.html#dashboard");
+        }
+      } else {
+        errorMsg.textContent = result.message || "Wrong username or password";
+        errorBox.style.display = "flex";
+      }
+    }
+  </script>
 </body>
 </html>

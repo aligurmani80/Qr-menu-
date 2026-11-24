@@ -154,4 +154,20 @@
     (CONFIG.theme && CONFIG.theme.colors && CONFIG.theme.colors.primary) || "#0F2E1F";
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", themePrimary);
+
+  const defaultSlug = (typeof Tenant !== "undefined" && typeof Tenant.getRestaurantSlug === "function")
+    ? Tenant.getRestaurantSlug("restaurant")
+    : "karahi-house";
+
+  document.querySelectorAll('a[href="index.html"], a[href^="index.html?"]').forEach((link) => {
+    try {
+      const u = new URL(link.getAttribute("href"), window.location.href);
+      if (!u.searchParams.get("r")) {
+        u.searchParams.set("r", defaultSlug);
+        link.setAttribute("href", u.pathname.split("/").pop() + u.search);
+      }
+    } catch {
+      link.setAttribute("href", `index.html?r=${defaultSlug}`);
+    }
+  });
 })();
